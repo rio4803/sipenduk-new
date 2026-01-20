@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { loginUser } from "@/lib/auth"
+import { generateCookie } from "@/lib/generateCookies"
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +18,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Username atau password salah" }, { status: 401 })
     }
 
-    return NextResponse.json({ user })
+    const token = generateCookie({
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      role: user.role
+    })
+
+    const res = NextResponse.json({ user })
+    res.cookies.set("sipenduk_loginToken", token, {
+      maxAge: 60*60*24,
+      httpOnly: true,
+      path: "/"
+    })
+
+    return res
   } catch (error) {
     console.error("Login error:", error)
     return NextResponse.json({ error: "Terjadi kesalahan saat login" }, { status: 500 })

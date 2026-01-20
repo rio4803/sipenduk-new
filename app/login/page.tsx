@@ -13,10 +13,10 @@ export default function LoginPage() {
     async function checkAdmin() {
       try {
         const response = await fetch("/api/auth/check-admin")
-        const data = await response.json()
+        const generatedAdmin = await response.json()
 
-        if (data.defaultAdmin) {
-          setDefaultAdmin(data.defaultAdmin)
+        if (Object.keys(generatedAdmin).length > 0) {
+          setDefaultAdmin(generatedAdmin)
         }
       } catch (err) {
         console.error("Error checking admin:", err)

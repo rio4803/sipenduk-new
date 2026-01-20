@@ -5,22 +5,16 @@ export async function GET() {
   try {
     console.log("Checking if admin exists...")
 
-    // Check if admin exists
     const adminExists = await checkAdminExists()
-    console.log("Admin exists:", adminExists)
-
-    // If no admin exists, create a default one
     if (!adminExists) {
       console.log("Creating default admin...")
       const defaultAdmin = await createDefaultAdmin()
       console.log("Default admin created with username:", defaultAdmin.username)
 
       return NextResponse.json({
-        defaultAdmin: {
           username: defaultAdmin.username,
           password: defaultAdmin.password,
-        },
-      })
+        })
     }
 
     // If admin exists, return empty object
@@ -31,7 +25,7 @@ export async function GET() {
     return NextResponse.json(
       {
         error: "Error checking admin",
-        details: error.message,
+        details: error instanceof Error ? error.message : "",
       },
       { status: 500 },
     )

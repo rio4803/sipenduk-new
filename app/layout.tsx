@@ -7,6 +7,7 @@ import { CustomCursor } from "@/components/custom-cursor"
 import { ParticlesBackground } from "@/components/particles-background"
 import { AuthProvider } from "@/lib/auth-context"
 import { Toaster } from "@/components/ui/sonner"
+import './globals.css'
 
 const inter = Inter({ subsets: ["latin"] })
 const appName = process.env.NEXT_PUBLIC_APP_NAME || "Sistem Informasi Kependudukan"
@@ -105,7 +106,6 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <ParticlesBackground />
-            <CustomCursor />
             {children}
             <Toaster />
           </AuthProvider>
@@ -115,8 +115,5 @@ export default function RootLayout({
   )
 }
 
-import "./globals.css"
 
 
-
-import './globals.css'

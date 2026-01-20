@@ -1,0 +1,14 @@
+flowchart TD
+    %% A[Christmas] -->|Get money| B(Go shopping)
+    %% B --> C{Let me think}
+    %% C -->|One| D[Laptop]
+    %% C -->|Two| E[iPhone]
+    %% C -->|Three| F[fa:fa-car Car]
+
+    A[Login Page] -->|GET /api/auth/check-admin| B{admin exists?}
+    B -->|no| F[Generate Admin Account]
+    F --> C
+    B -->|yes| C[Login Form]
+    C -->|POST /api/auth/login| D{user found?}
+    D-->|yes| E[dashboard]
+    D -->|no| C

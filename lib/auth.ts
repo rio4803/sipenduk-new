@@ -1,77 +1,66 @@
+import { supabase } from "@/app/utils/supabase"
 import { getRedisData, getRedisKeys, setRedisData } from "./redis-service"
 import { generateRandomPassword } from "./utils"
 
 export type User = {
-  id: number
+  id: string
   name: string
   username: string
-  role: "admin" | "guest"
+  role: string
 }
 
 export type UserWithPassword = User & {
   password: string
 }
 
-// Fungsi untuk memeriksa apakah ada admin di database
 export async function checkAdminExists(): Promise<boolean> {
-  // Pastikan kode ini hanya dijalankan di server
   if (typeof window !== "undefined") {
     throw new Error("This function can only be used on the server")
   }
 
   try {
-    const keys = await getRedisKeys("pengguna:*")
-
-    if (keys.length === 0) return false
-
-    const usersPromises = keys.map((key) => getRedisData(key))
-    const users = await Promise.all(usersPromises)
-
-    return users.some((user) => user && user.level === "admin")
+    const {data, error} = await supabase.from("pengguna").select("id").eq("role", "admin")
+    if(!error && data.length){
+      return true
+    }
+    return false
   } catch (error) {
     console.error("Error checking admin exists:", error)
     return false
   }
 }
 
-// Fungsi untuk membuat admin default jika tidak ada admin
-export async function createDefaultAdmin(): Promise<UserWithPassword> {
-  // Pastikan kode ini hanya dijalankan di server
+export async function createDefaultAdmin(): Promise<{
+  name: string,
+  username: string,
+  password: string,
+  role: string  
+}> {
   if (typeof window !== "undefined") {
     throw new Error("This function can only be used on the server")
   }
 
   try {
     const password = generateRandomPassword(8)
-
     const admin = {
-      id_pengguna: 1,
-      nama_pengguna: "Administrator",
+      name: "Administrator",
       username: "admin",
       password: password,
-      level: "admin",
+      role: "admin",
     }
 
-    // Use setRedisData instead of getRedisData to save the admin account
-    await setRedisData("pengguna:1", admin)
+    const insertAdmin = await supabase.from("pengguna").insert(admin)
+    console.log(insertAdmin)
     console.log("Default admin created successfully:", admin.username, admin.password)
 
-    return {
-      id: admin.id_pengguna,
-      name: admin.nama_pengguna,
-      username: admin.username,
-      password: admin.password,
-      role: admin.level,
-    }
+    return admin
   } catch (error) {
     console.error("Error creating default admin:", error)
     throw new Error("Failed to create default admin")
   }
 }
 
-// Server-side login function for API route
 export async function login(username: string, password: string): Promise<User | null> {
-  // Pastikan kode ini hanya dijalankan di server
   if (typeof window !== "undefined") {
     throw new Error("This function can only be used on the server")
   }
@@ -79,22 +68,12 @@ export async function login(username: string, password: string): Promise<User | 
   try {
     console.log("Login attempt for username:", username)
 
-    // Dapatkan semua pengguna dari Redis
-    const keys = await getRedisKeys("pengguna:*")
-    console.log("Found user keys:", keys)
-
-    const usersPromises = keys.map((key) => getRedisData(key))
-    const users = await Promise.all(usersPromises)
-
-    // Log for debugging
-    console.log("Found users:", users.length)
-    console.log("All users:", JSON.stringify(users))
-
-    // Cari pengguna dengan username dan password yang cocok
-    const user = users.find((u) => {
-      console.log("Checking user:", u?.username, "Password:", u?.password)
-      return u && u.username === username && u.password === password
-    })
+    const {data: user, error} = await supabase
+      .from("pengguna")
+      .select("*")
+      .eq("username", username)
+      .eq("password", password)
+      .single()
 
     if (!user) {
       console.log("No matching user found")
@@ -103,14 +82,12 @@ export async function login(username: string, password: string): Promise<User | 
 
     console.log("User found:", user.username, "with role:", user.level)
 
-    // Buat objek user tanpa password
     const userObj: User = {
-      id: user.id_pengguna,
-      name: user.nama_pengguna,
+      id: user.id,
+      name: user.name,
       username: user.username,
-      role: user.level,
+      role: user.role,
     }
-
     return userObj
   } catch (error) {
     console.error("Error during login:", error)
@@ -122,26 +99,26 @@ export async function login(username: string, password: string): Promise<User | 
 export const loginUser = login
 
 // Add this function to validate a user session against the database
-export async function validateUserById(userId: number): Promise<User | null> {
-  if (!userId) return null
+// export async function validateUserById(userId: number): Promise<User | null> {
+//   if (!userId) return null
 
-  try {
-    // Check if user exists in database
-    const dbUser = await getRedisData(`pengguna:${userId}`)
-    if (!dbUser) return null
+//   try {
+//     // Check if user exists in database
+//     const dbUser = await getRedisData(`pengguna:${userId}`)
+//     if (!dbUser) return null
 
-    // Return user object
-    return {
-      id: dbUser.id_pengguna,
-      name: dbUser.nama_pengguna,
-      username: dbUser.username,
-      role: dbUser.level,
-    }
-  } catch (error) {
-    console.error("Error validating user:", error)
-    return null
-  }
-}
+//     // Return user object
+//     return {
+//       id: dbUser.id_pengguna,
+//       name: dbUser.nama_pengguna,
+//       username: dbUser.username,
+//       role: dbUser.level,
+//     }
+//   } catch (error) {
+//     console.error("Error validating user:", error)
+//     return null
+//   }
+// }
 
 export async function getSession(): Promise<User | null> {
   // Pastikan kode ini hanya dijalankan di server
