@@ -16,15 +16,15 @@ export type Penduduk = {
 }
 
 export type KartuKeluarga = {
-  id_kk: number
+  id: number
   no_kk: string
   kepala: string
   desa: string
   rt: string
   rw: string
-  kec: string
-  kab: string
-  prov: string
+  kecamatan: string
+  kabupaten: string
+  provinsi: string
 }
 
 export type AnggotaKeluarga = {
@@ -304,81 +304,81 @@ export const penduduk: Penduduk[] = [
 
 export const kartuKeluarga: KartuKeluarga[] = [
   {
-    id_kk: 1,
+    id: 1,
     no_kk: "3501012001900001",
     kepala: "Budi Santoso",
     desa: "Tamantirto",
     rt: "001",
     rw: "002",
-    kec: "Kasihan",
-    kab: "Bantul",
-    prov: "DIY",
+    kecamatan: "Kasihan",
+    kabupaten: "Bantul",
+    provinsi: "DIY",
   },
   {
-    id_kk: 2,
+    id: 2,
     no_kk: "3501012005900005",
     kepala: "Joko Widodo",
     desa: "Tamantirto",
     rt: "002",
     rw: "003",
-    kec: "Kasihan",
-    kab: "Bantul",
-    prov: "DIY",
+    kecamatan: "Kasihan",
+    kabupaten: "Bantul",
+    provinsi: "DIY",
   },
   {
-    id_kk: 3,
+    id: 3,
     no_kk: "3501012008900008",
     kepala: "Mega Wati",
     desa: "Tamantirto",
     rt: "003",
     rw: "001",
-    kec: "Kasihan",
-    kab: "Bantul",
-    prov: "DIY",
+    kecamatan: "Kasihan",
+    kabupaten: "Bantul",
+    provinsi: "DIY",
   },
   {
-    id_kk: 4,
+    id: 4,
     no_kk: "3501012010900010",
     kepala: "Prabowo Subianto",
     desa: "Tamantirto",
     rt: "004",
     rw: "002",
-    kec: "Kasihan",
-    kab: "Bantul",
-    prov: "DIY",
+    kecamatan: "Kasihan",
+    kabupaten: "Bantul",
+    provinsi: "DIY",
   },
   {
-    id_kk: 5,
+    id: 5,
     no_kk: "3501012012900012",
     kepala: "Anies Baswedan",
     desa: "Tamantirto",
     rt: "005",
     rw: "003",
-    kec: "Kasihan",
-    kab: "Bantul",
-    prov: "DIY",
+    kecamatan: "Kasihan",
+    kabupaten: "Bantul",
+    provinsi: "DIY",
   },
   {
-    id_kk: 6,
+    id: 6,
     no_kk: "102038292321",
     kepala: "Nugroho",
     desa: "Tamantirto",
     rt: "01",
     rw: "0",
-    kec: "Kasihan",
-    kab: "Bantul",
-    prov: "DIY",
+    kecamatan: "Kasihan",
+    kabupaten: "Bantul",
+    provinsi: "DIY",
   },
   {
-    id_kk: 7,
+    id: 7,
     no_kk: "356163565",
     kepala: "Restu",
     desa: "Tamantirto",
     rt: "002",
     rw: "004",
-    kec: "Kasihan",
-    kab: "Bantul",
-    prov: "Daerah Istimewa Yogyakarta",
+    kecamatan: "Kasihan",
+    kabupaten: "Bantul",
+    provinsi: "Daerah Istimewa Yogyakarta",
   },
 ]
 
@@ -580,7 +580,7 @@ export function getPendudukById(id: number): Penduduk | undefined {
 }
 
 export function getKartuKeluargaById(id: number): KartuKeluarga | undefined {
-  return kartuKeluarga.find((kk) => kk.id_kk === id)
+  return kartuKeluarga.find((kk) => kk.id === id)
 }
 
 export function getAnggotaKeluargaByKK(id_kk: number): AnggotaKeluarga[] {

@@ -82,7 +82,7 @@ export function MainNav() {
       ]
 
   return (
-    <nav className="hidden md:flex items-center space-x-2 lg:space-x-4 mx-auto overflow-x-auto">
+    <nav className="hidden md:flex items-center space-x-2 lg:space-x-4 mx-auto overflow-x-auto [&::-webkit-scrollbar]:h-0">
       {routes.map((route) => (
         <Button key={route.href} asChild variant={route.active ? "default" : "ghost"} size="sm">
           <Link

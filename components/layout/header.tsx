@@ -65,10 +65,10 @@ export function Header() {
       }
     }
 
-    checkNotifications()
+    // checkNotifications()
 
-    const interval = setInterval(checkNotifications, 30000) // Check every 30s
-    return () => clearInterval(interval)
+    // const interval = setInterval(checkNotifications, 30000) // Check every 30s
+    // return () => clearInterval(interval)
   }, [user, notifications.length]) // Add notifications.length to deps to compare
 
   const notificationPath = isAdmin ? "/admin/notifikasi" : "/dashboard/notifikasi"

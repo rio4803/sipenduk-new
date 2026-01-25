@@ -1,13 +1,13 @@
 import { getRedisData, getRedisKeys, setRedisData } from "./redis-service"
 
 type ActivityLog = {
-  userId: number
+  id: string
+  user_id: string
+  username?: string
   type: string
+  entity_type: string
   description: string
-  entityId: number
-  entityType: string
-  timestamp?: number
-  userName?: string
+  created_at?: string
 }
 
 export async function logActivity(activity: Omit<ActivityLog, "timestamp">): Promise<void> {
@@ -53,7 +53,7 @@ export async function getRecentActivities(limit: number, userId?: number): Promi
         }
       }),
     )
-
+    console.log(activitiesWithUsernames)
     return activitiesWithUsernames
   } catch (error) {
     console.error("Error getting recent activities:", error)

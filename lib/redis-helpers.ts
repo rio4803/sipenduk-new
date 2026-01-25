@@ -28,7 +28,7 @@ export async function getAllPenduduk(): Promise<Penduduk[]> {
   )
 }
 
-export async function getPendudukById(id: number): Promise<Penduduk | null> {
+export async function getPendudukById(id: string): Promise<Penduduk | null> {
   return cachedFetch(
     `penduduk:${id}`,
     async () => {

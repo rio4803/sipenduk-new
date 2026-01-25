@@ -25,7 +25,6 @@ export async function getKematianData() {
         }
       }),
     )
-
     return kematianWithPenduduk.filter(Boolean)
   } catch (error) {
     console.error("Error fetching kematian data:", error)

@@ -16,6 +16,7 @@ export default function KartuKeluargaPage() {
     async function loadData() {
       try {
         const data: KartuKeluarga[] = await getKartuKeluargaData()
+
         setKartuKeluarga(data)
       } catch (error) {
         console.error("Error loading kartu keluarga data:", error)
@@ -49,11 +50,11 @@ export default function KartuKeluargaPage() {
       header: "RW",
     },
     {
-      accessorKey: "kec",
+      accessorKey: "kecamatan",
       header: "Kecamatan",
     },
     {
-      accessorKey: "kab",
+      accessorKey: "kabupaten",
       header: "Kabupaten",
     },
     {
@@ -62,7 +63,7 @@ export default function KartuKeluargaPage() {
       cell: ({ row }: { row: { original: KartuKeluarga } }) => (
         <div className="flex gap-2">
           <Button asChild size="sm" variant="outline">
-            <Link href={`/admin/kartu-keluarga/${row.original.id_kk}`}>Detail</Link>
+            <Link href={`/admin/kartu-keluarga/${row.original.id}`}>Detail</Link>
           </Button>
         </div>
       ),

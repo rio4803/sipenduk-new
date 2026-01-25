@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { getRedisData, getRedisKeys, setRedisData, deleteRedisData } from "@/lib/redis-service"
 import { z } from "zod"
 import { AnggotaKeluarga, KartuKeluarga } from "@/lib/dummy-data"
+import { supabase } from "@/app/utils/supabase"
 
 // Schema validasi untuk kartu keluarga
 const kartuKeluargaSchema = z.object({
@@ -12,29 +13,20 @@ const kartuKeluargaSchema = z.object({
   desa: z.string().min(1, "Desa harus diisi"),
   rt: z.string().min(1, "RT harus diisi"),
   rw: z.string().min(1, "RW harus diisi"),
-  kec: z.string().min(1, "Kecamatan harus diisi"),
-  kab: z.string().min(1, "Kabupaten harus diisi"),
-  prov: z.string().min(1, "Provinsi harus diisi"),
+  kecamatan: z.string().min(1, "Kecamatan harus diisi"),
+  kabupaten: z.string().min(1, "Kabupaten harus diisi"),
+  provinsi: z.string().min(1, "Provinsi harus diisi"),
 })
 
 // Fungsi untuk mendapatkan semua data kartu keluarga
 export async function getKartuKeluargaData() {
   try {
-    // Get all kartu keluarga data
-    const keys = await getRedisKeys("kk:*")
-    const keluargaPromises = keys.map((key) => getRedisData(key))
-    const keluargaList = await Promise.all(keluargaPromises) as KartuKeluarga[]
-
-    return keluargaList
-      .filter(Boolean)
-      .map((k) => {
-        const id = k.id_kk || 0
-        return {
-          ...k,
-          id_kk: id,
-        }
-      })
-      .sort((a, b) => a.kepala.localeCompare(b.kepala))
+    const {data, error} = await supabase.from("kartu_keluarga").select("*")
+    if(error){
+      console.error("Error fetching kartu keluarga data:", error)
+      return []
+    }
+    return data
   } catch (error) {
     console.error("Error fetching kartu keluarga data:", error)
     return []
@@ -91,7 +83,7 @@ export async function getAnggotaKeluargaWithDetail(id: string) {
       const orderB = order[b.hubungan] || 99
       return orderA - orderB
     })
-
+    
     return anggotaWithDetail
   } catch (error) {
     console.error(`Error fetching anggota keluarga for ID ${id}:`, error)
@@ -102,6 +94,7 @@ export async function getAnggotaKeluargaWithDetail(id: string) {
 // Fungsi untuk menambahkan kartu keluarga baru dengan auto-create penduduk kepala keluarga
 export async function createKartuKeluarga(formData: FormData) {
   try {
+
     // Validasi input KK
     const validatedFields = kartuKeluargaSchema.safeParse({
       no_kk: formData.get("no_kk"),
@@ -109,11 +102,10 @@ export async function createKartuKeluarga(formData: FormData) {
       desa: formData.get("desa"),
       rt: formData.get("rt"),
       rw: formData.get("rw"),
-      kec: formData.get("kec"),
-      kab: formData.get("kab"),
-      prov: formData.get("prov"),
+      kecamatan: formData.get("kec"),
+      kabupaten: formData.get("kab"),
+      provinsi: formData.get("prov"),
     })
-
     if (!validatedFields.success) {
       return {
         error: "Validasi gagal",
@@ -121,23 +113,14 @@ export async function createKartuKeluarga(formData: FormData) {
       }
     }
 
-    // Periksa apakah Nomor KK sudah ada
-    const keys = await getRedisKeys("kk:*")
-    const keluargaPromises = keys.map((key) => getRedisData(key))
-    const keluargaList = await Promise.all(keluargaPromises) as KartuKeluarga[]
-    const noKKExists = keluargaList.some((k) => k && k.no_kk === validatedFields.data.no_kk)
-
-    if (noKKExists) {
+    const insertKK = await supabase.from("kartu_keluarga").insert({
+      ...validatedFields.data
+    })
+    if(insertKK.error?.code == '23505'){
       return { error: "Nomor KK sudah terdaftar" }
     }
 
-    // Dapatkan ID baru untuk KK
-    const keluargaIds = keluargaList.map((k) => (k ? k.id_kk : 0))
-    const newId = keluargaIds.length > 0 ? Math.max(...keluargaIds) + 1 : 1
-
-    // ============================================
     // AUTO-CREATE PENDUDUK UNTUK KEPALA KELUARGA
-    // ============================================
     const nik_kepala = formData.get("nik_kepala")?.toString()
     const tempat_lh_kepala = formData.get("tempat_lh_kepala")?.toString()
     const tgl_lh_kepala = formData.get("tgl_lh_kepala")?.toString()
@@ -146,80 +129,48 @@ export async function createKartuKeluarga(formData: FormData) {
     const kawin_kepala = formData.get("kawin_kepala")?.toString()
     const pekerjaan_kepala = formData.get("pekerjaan_kepala")?.toString()
 
-    // Get next penduduk ID
-    const pendudukKeys = await getRedisKeys("penduduk:*")
-    const pendudukList = await Promise.all(pendudukKeys.map(k => getRedisData(k)))
-    const pendudukIds = pendudukList.map(p => (p ? p.id_pend : 0))
-    const newPendId = pendudukIds.length > 0 ? Math.max(...pendudukIds) + 1 : 1
-
     // Create penduduk for kepala keluarga
     const newPenduduk = {
-      id_pend: newPendId,
       nik: nik_kepala || "",
       nama: validatedFields.data.kepala,
-      tempat_lh: tempat_lh_kepala || "-",
-      tgl_lh: tgl_lh_kepala || "",
-      jekel: jekel_kepala || "LK",
+      tempat_lahir: tempat_lh_kepala || "-",
+      tanggal_lahir: tgl_lh_kepala || "",
+      jenis_kelamin: jekel_kepala || "LK",
       desa: validatedFields.data.desa,
       rt: validatedFields.data.rt,
       rw: validatedFields.data.rw,
+      kecamatan: validatedFields.data.kecamatan,
+      kabupaten: validatedFields.data.kabupaten,
+      provinsi: validatedFields.data.provinsi,
       agama: agama_kepala || "-",
-      kawin: kawin_kepala || "Kawin",
+      status_perkawinan: kawin_kepala || "Kawin",
       pekerjaan: pekerjaan_kepala || "-",
-      status: "Ada" as const,
+      status_penduduk: "Ada" as const,
     }
+    const insertPenduduk = await supabase.from("penduduk").insert(newPenduduk)
 
-    await setRedisData(`penduduk:${newPendId}`, newPenduduk)
-
-    // =====================================
     // BUAT AKUN PENGGUNA OTOMATIS
-    // =====================================
-    const username = generateRandomUsername(newPenduduk)
-    const password = generateRandomPassword()
-
     const newUser = {
-      id_user: newPendId,
-      username,
-      password,
+      username: newPenduduk.nik,
+      password: generateRandomPassword(),
       role: "penduduk",
-      id_pend: newPendId,
     }
-
-    await setRedisData(`user:${newPendId}`, newUser)
-
-    // Create the KK record
-    const newKeluarga = {
-      id_kk: newId,
-      ...validatedFields.data,
-    }
-
-    // Simpan ke Redis
-    await setRedisData(`kk:${newId}`, newKeluarga)
-
-    // ============================================
+    const insertNewUser = await supabase.from("pengguna").insert(newUser)
+    
     // LINK KEPALA KELUARGA TO KK AS "Suami"
-    // ============================================
-    const anggotaKeys = await getRedisKeys("anggota:*")
-    const anggotaList = await Promise.all(anggotaKeys.map(getRedisData))
-    const anggotaIds = anggotaList.filter(a => a).map(a => a.id_anggota)
-    const newAnggotaId = anggotaIds.length > 0 ? Math.max(...anggotaIds) + 1 : 1
-
     const newAnggota = {
-      id_anggota: newAnggotaId,
-      id_kk: newId,
-      id_pend: newPendId,
+      id_kk: validatedFields.data?.no_kk,
+      id_penduduk: newPenduduk.nik,
       hubungan: "Suami", // Kepala keluarga as "Suami"
     }
+    const setHubungan = await supabase.from("anggota_kartu_keluarga").insert(newAnggota)
 
-    await setRedisData(`anggota:${newAnggotaId}`, newAnggota)
-
-    revalidatePath("/admin/kartu-keluarga")
+    // revalidatePath("/admin/kartu-keluarga")
     return { 
       success: true, 
-      data: newKeluarga,
       akun: {
-        username,
-        password,
+        username: newUser.username,
+        password: newUser.password,
         message: "Akun kepala keluarga berhasil dibuat"
       }
     }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { use, useEffect, useState } from "react"
 import Link from "next/link"
 import { notFound, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -20,9 +20,9 @@ import { formatDate } from "@/lib/utils"
 export default function DetailKartuKeluargaPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const id = Number.parseInt(params.id)
+  const {id} = use(params)
   const router = useRouter()
   const { user } = useAuth()
   const [kk, setKK] = useState<any>(null)
@@ -33,7 +33,7 @@ export default function DetailKartuKeluargaPage({
   useEffect(() => {
     async function loadData() {
       try {
-        const [kkData, anggotaData] = await Promise.all([getKartuKeluargaById(id.toString()), getAnggotaKeluargaWithDetail(id.toString())])
+        const [kkData, anggotaData] = await Promise.all([getKartuKeluargaById(id), getAnggotaKeluargaWithDetail(id)])
 
         if (!kkData) {
           notFound()

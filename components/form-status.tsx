@@ -18,11 +18,11 @@ export function FormStatus({ error, success, errors }: FormStatusProps) {
       setVisible(true)
 
       // Auto-hide after 5 seconds
-      const timer = setTimeout(() => {
-        setVisible(false)
-      }, 5000)
+      // const timer = setTimeout(() => {
+      //   setVisible(false)
+      // }, 5000)
 
-      return () => clearTimeout(timer)
+      // return () => clearTimeout(timer)
     }
   }, [error, success])
 
