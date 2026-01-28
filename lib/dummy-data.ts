@@ -1,6 +1,6 @@
 // Types based on the database schema
 export type Penduduk = {
-  id_pend: number
+  id_penduduk: string
   nik: string
   nama: string
   tempat_lh: string
@@ -28,9 +28,9 @@ export type KartuKeluarga = {
 }
 
 export type AnggotaKeluarga = {
-  id_anggota: number
-  id_kk: number
-  id_pend: number
+  id_anggota: string
+  id_kk: string
+  id_penduduk: string
   hubungan: string
 }
 
@@ -76,7 +76,7 @@ export type Pengguna = {
 // Dummy data
 export const penduduk: Penduduk[] = [
   {
-    id_pend: 1,
+    id_penduduk: "1",
     nik: "3501012001900001",
     nama: "Budi Santoso",
     tempat_lh: "Jakarta",
@@ -91,7 +91,7 @@ export const penduduk: Penduduk[] = [
     status: "Ada",
   },
   {
-    id_pend: 2,
+    id_penduduk: "2",
     nik: "3501012002900002",
     nama: "Siti Rahayu",
     tempat_lh: "Yogyakarta",
@@ -106,7 +106,7 @@ export const penduduk: Penduduk[] = [
     status: "Ada",
   },
   {
-    id_pend: 3,
+    id_penduduk: "3",
     nik: "3501012003900003",
     nama: "Ahmad Rizki",
     tempat_lh: "Bantul",
@@ -121,7 +121,7 @@ export const penduduk: Penduduk[] = [
     status: "Ada",
   },
   {
-    id_pend: 4,
+    id_penduduk: "4",
     nik: "3501012004900004",
     nama: "Dewi Lestari",
     tempat_lh: "Sleman",
@@ -136,7 +136,7 @@ export const penduduk: Penduduk[] = [
     status: "Ada",
   },
   {
-    id_pend: 5,
+    id_penduduk: "5",
     nik: "3501012005900005",
     nama: "Joko Widodo",
     tempat_lh: "Surakarta",
@@ -151,7 +151,7 @@ export const penduduk: Penduduk[] = [
     status: "Ada",
   },
   {
-    id_pend: 6,
+    id_penduduk: "6",
     nik: "3501012006900006",
     nama: "Ani Yudhoyono",
     tempat_lh: "Yogyakarta",
@@ -166,7 +166,7 @@ export const penduduk: Penduduk[] = [
     status: "Ada",
   },
   {
-    id_pend: 7,
+    id_penduduk: "7",
     nik: "3501012007900007",
     nama: "Agus Harimurti",
     tempat_lh: "Bantul",
@@ -181,7 +181,7 @@ export const penduduk: Penduduk[] = [
     status: "Ada",
   },
   {
-    id_pend: 8,
+    id_penduduk: "8",
     nik: "3501012008900008",
     nama: "Mega Wati",
     tempat_lh: "Jakarta",
@@ -196,7 +196,7 @@ export const penduduk: Penduduk[] = [
     status: "Ada",
   },
   {
-    id_pend: 9,
+    id_penduduk: "9",
     nik: "3501012009900009",
     nama: "Susilo Bambang",
     tempat_lh: "Pacitan",
@@ -211,7 +211,7 @@ export const penduduk: Penduduk[] = [
     status: "Ada",
   },
   {
-    id_pend: 10,
+    id_penduduk: "10",
     nik: "3501012010900010",
     nama: "Prabowo Subianto",
     tempat_lh: "Jakarta",
@@ -226,7 +226,7 @@ export const penduduk: Penduduk[] = [
     status: "Pindah",
   },
   {
-    id_pend: 11,
+    id_penduduk: "11",
     nik: "3501012011900011",
     nama: "Sandiaga Uno",
     tempat_lh: "Jakarta",
@@ -241,7 +241,7 @@ export const penduduk: Penduduk[] = [
     status: "Meninggal",
   },
   {
-    id_pend: 12,
+    id_penduduk: "12",
     nik: "3501012012900012",
     nama: "Anies Baswedan",
     tempat_lh: "Jakarta",
@@ -256,7 +256,7 @@ export const penduduk: Penduduk[] = [
     status: "Ada",
   },
   {
-    id_pend: 13,
+    id_penduduk: "13",
     nik: "3501012013900013",
     nama: "Ganjar Pranowo",
     tempat_lh: "Semarang",
@@ -271,7 +271,7 @@ export const penduduk: Penduduk[] = [
     status: "Ada",
   },
   {
-    id_pend: 14,
+    id_penduduk: "14",
     nik: "1234",
     nama: "Ardi",
     tempat_lh: "Jogja",
@@ -286,7 +286,7 @@ export const penduduk: Penduduk[] = [
     status: "Pindah",
   },
   {
-    id_pend: 15,
+    id_penduduk: "15",
     nik: "21712718",
     nama: "Restu",
     tempat_lh: "Bantul",
@@ -384,87 +384,87 @@ export const kartuKeluarga: KartuKeluarga[] = [
 
 export const anggotaKeluarga: AnggotaKeluarga[] = [
   {
-    id_anggota: 1,
-    id_kk: 1,
-    id_pend: 1,
+    id_anggota: "1",
+    id_kk: "1",
+    id_penduduk: "1",
     hubungan: "Kepala Keluarga",
   },
   {
-    id_anggota: 2,
-    id_kk: 1,
-    id_pend: 2,
+    id_anggota: "2",
+    id_kk: "1",
+    id_penduduk: "2",
     hubungan: "Istri",
   },
   {
-    id_anggota: 3,
-    id_kk: 1,
-    id_pend: 3,
+    id_anggota: "3",
+    id_kk: "1",
+    id_penduduk: "3",
     hubungan: "Anak",
   },
   {
-    id_anggota: 4,
-    id_kk: 1,
-    id_pend: 4,
+    id_anggota: "4",
+    id_kk: "1",
+    id_penduduk: "4",
     hubungan: "Anak",
   },
   {
-    id_anggota: 5,
-    id_kk: 2,
-    id_pend: 5,
+    id_anggota: "5",
+    id_kk: "2",
+    id_penduduk: "5",
     hubungan: "Kepala Keluarga",
   },
   {
-    id_anggota: 6,
-    id_kk: 2,
-    id_pend: 6,
+    id_anggota: "6",
+    id_kk: "2",
+    id_penduduk: "6",
     hubungan: "Istri",
   },
   {
-    id_anggota: 7,
-    id_kk: 2,
-    id_pend: 7,
+    id_anggota: "7",
+    id_kk: "2",
+    id_penduduk: "7",
     hubungan: "Anak",
   },
   {
-    id_anggota: 8,
-    id_kk: 3,
-    id_pend: 8,
+    id_anggota: "8",
+    id_kk: "3",
+    id_penduduk: "8",
     hubungan: "Kepala Keluarga",
   },
   {
-    id_anggota: 9,
-    id_kk: 3,
-    id_pend: 9,
+    id_anggota: "9",
+    id_kk: "3",
+    id_penduduk: "9",
     hubungan: "Suami",
   },
   {
-    id_anggota: 10,
-    id_kk: 4,
-    id_pend: 10,
+    id_anggota: "10",
+    id_kk: "4",
+    id_penduduk: "10",
     hubungan: "Kepala Keluarga",
   },
   {
-    id_anggota: 11,
-    id_kk: 4,
-    id_pend: 11,
+    id_anggota: "11",
+    id_kk: "4",
+    id_penduduk: "11",
     hubungan: "Saudara",
   },
   {
-    id_anggota: 12,
-    id_kk: 5,
-    id_pend: 12,
+    id_anggota: "12",
+    id_kk: "5",
+    id_penduduk: "12",
     hubungan: "Kepala Keluarga",
   },
   {
-    id_anggota: 13,
-    id_kk: 5,
-    id_pend: 13,
+    id_anggota: "13",
+    id_kk: "5",
+    id_penduduk: "13",
     hubungan: "Saudara",
   },
   {
-    id_anggota: 14,
-    id_kk: 6,
-    id_pend: 14,
+    id_anggota: "14",
+    id_kk: "6",
+    id_penduduk: "14",
     hubungan: "Kepala Keluarga",
   },
 ]
@@ -575,22 +575,22 @@ export const pengguna: Pengguna[] = [
 ]
 
 // Helper functions to get data
-export function getPendudukById(id: number): Penduduk | undefined {
-  return penduduk.find((p) => p.id_pend === id)
+export function getPendudukById(id: string): Penduduk | undefined {
+  return penduduk.find((p) => p.id_penduduk === id)
 }
 
 export function getKartuKeluargaById(id: number): KartuKeluarga | undefined {
   return kartuKeluarga.find((kk) => kk.id === id)
 }
 
-export function getAnggotaKeluargaByKK(id_kk: number): AnggotaKeluarga[] {
+export function getAnggotaKeluargaByKK(id_kk: string): AnggotaKeluarga[] {
   return anggotaKeluarga.filter((a) => a.id_kk === id_kk)
 }
 
-export function getAnggotaKeluargaWithDetail(id_kk: number): any[] {
+export function getAnggotaKeluargaWithDetail(id_kk: string): any[] {
   const anggota = getAnggotaKeluargaByKK(id_kk)
   return anggota.map((a) => {
-    const pendudukData = getPendudukById(a.id_pend)
+    const pendudukData = getPendudukById(a.id_penduduk)
     return {
       ...a,
       penduduk: pendudukData,

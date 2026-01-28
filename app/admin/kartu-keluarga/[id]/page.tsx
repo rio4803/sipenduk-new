@@ -57,7 +57,7 @@ export default function DetailKartuKeluargaPage({
 
     if (confirm("Apakah Anda yakin ingin menghapus kartu keluarga ini?")) {
       try {
-        const result = await deleteKartuKeluarga(id.toString())
+        const result = await deleteKartuKeluarga(id)
 
         if (result.error) {
           setError(result.error)
@@ -71,18 +71,18 @@ export default function DetailKartuKeluargaPage({
     }
   }
 
-  const handleRemoveAnggota = async (id_anggota: number) => {
+  const handleRemoveAnggota = async (id_anggota: string) => {
     if (!user) return
 
     if (confirm("Apakah Anda yakin ingin menghapus anggota keluarga ini?")) {
       try {
-        const result = await removeAnggotaKeluarga(id_anggota.toString())
+        const result = await removeAnggotaKeluarga(id_anggota)
 
         if (result.error) {
           setError(result.error)
         } else {
           // Refresh data
-          const anggotaData = await getAnggotaKeluargaWithDetail(id.toString())
+          const anggotaData = await getAnggotaKeluargaWithDetail(id)
           setAnggota(anggotaData)
         }
       } catch (error) {
@@ -159,15 +159,15 @@ export default function DetailKartuKeluargaPage({
                   </div>
                   <div>
                     <p className="text-sm font-medium">Kecamatan</p>
-                    <p className="text-lg">{kk.kec}</p>
+                    <p className="text-lg">{kk.kecamatan}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">Kabupaten</p>
-                    <p className="text-lg">{kk.kab}</p>
+                    <p className="text-lg">{kk.kabupaten}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">Provinsi</p>
-                    <p className="text-lg">{kk.prov}</p>
+                    <p className="text-lg">{kk.provinsi}</p>
                   </div>
                 </div>
               </CardContent>
@@ -197,20 +197,20 @@ export default function DetailKartuKeluargaPage({
                       </thead>
                       <tbody>
                         {anggota.map((a) => (
-                          <tr key={a.id_anggota} className="border-b">
+                          <tr key={a.id} className="border-b">
                             <td className="py-2 px-4">{a.penduduk?.nik || "-"}</td>
                             <td className="py-2 px-4">{a.penduduk?.nama || "-"}</td>
-                            <td className="py-2 px-4">{a.penduduk?.jekel === "LK" ? "Laki-laki" : "Perempuan"}</td>
+                            <td className="py-2 px-4">{a.penduduk?.jenis_kelamin === "LK" ? "Laki-laki" : "Perempuan"}</td>
                             <td className="py-2 px-4">
-                              {a.penduduk?.tempat_lh || "-"}, {a.penduduk?.tgl_lh ? formatDate(a.penduduk.tgl_lh) : "-"}
+                              {a.penduduk?.tempat_lahir || "-"}, {a.penduduk?.tanggal_lahir ? formatDate(a.penduduk.tanggal_lahir) : "-"}
                             </td>
                             <td className="py-2 px-4">{a.hubungan}</td>
-                            <td className="py-2 px-4">{a.penduduk?.status || "-"}</td>
+                            <td className="py-2 px-4">{a.penduduk?.status_penduduk || "-"}</td>
                             <td className="py-2 px-4">
                               <Button
                                 size="sm"
                                 variant="destructive"
-                                onClick={() => handleRemoveAnggota(a.id_anggota)}
+                                onClick={() => handleRemoveAnggota(a.id)}
                                 // disabled={a.hubungan === "Kepala Keluarga"}
                               >
                                 Hapus

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import Link from "next/link"
 import { useRouter, notFound } from "next/navigation"
 import { getKartuKeluargaById, updateKartuKeluarga } from "../../actions"
@@ -17,9 +17,9 @@ import { useAuth } from "@/lib/auth-context"
 export default function EditKartuKeluargaPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const id = Number.parseInt(params.id)
+  const {id} = use(params)
   const router = useRouter()
   const { user } = useAuth()
   const [isPending, setIsPending] = useState(false)
@@ -32,7 +32,7 @@ export default function EditKartuKeluargaPage({
   useEffect(() => {
     async function loadData() {
       try {
-        const data = await getKartuKeluargaById(id.toString())
+        const data = await getKartuKeluargaById(id)
         if (!data) {
           notFound()
         }
@@ -60,7 +60,7 @@ export default function EditKartuKeluargaPage({
     const formData = new FormData(e.currentTarget)
 
     try {
-      const result = await updateKartuKeluarga(id.toString(), formData)
+      const result = await updateKartuKeluarga(id, formData)
 
       if (result.error) {
         setError(result.error)
@@ -129,17 +129,17 @@ export default function EditKartuKeluargaPage({
 
               <div className="space-y-2">
                 <Label htmlFor="kec">Kecamatan</Label>
-                <Input id="kec" name="kec" defaultValue={kk.kec} required />
+                <Input id="kec" name="kecamatan" defaultValue={kk.kecamatan} required />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="kab">Kabupaten</Label>
-                <Input id="kab" name="kab" defaultValue={kk.kab} required />
+                <Input id="kab" name="kabupaten" defaultValue={kk.kabupaten} required />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="prov">Provinsi</Label>
-                <Input id="prov" name="prov" defaultValue={kk.prov} required />
+                <Input id="prov" name="provinsi" defaultValue={kk.provinsi} required />
               </div>
             </div>
           </CardContent>

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import Link from "next/link"
 import { useRouter, notFound } from "next/navigation"
 import { getKartuKeluargaById, addAnggotaKeluarga } from "../../actions"
@@ -19,9 +19,9 @@ import { Penduduk } from "@/lib/dummy-data"
 export default function TambahAnggotaKeluargaPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const id = Number.parseInt(params.id)
+  const {id} = use(params)
   const router = useRouter()
   const { user } = useAuth()
   const [isPending, setIsPending] = useState(false)
@@ -35,8 +35,9 @@ export default function TambahAnggotaKeluargaPage({
   useEffect(() => {
     async function loadData() {
       try {
-        const [kkData, pendudukData] = await Promise.all([getKartuKeluargaById(id.toString()), getPendudukData()])
-
+        const [kkData, pendudukData] = await Promise.all([getKartuKeluargaById(id), getPendudukData()])
+        console.log({pendudukData})
+        console.log({kkData})
         if (!kkData) {
           notFound()
         }
@@ -67,14 +68,14 @@ export default function TambahAnggotaKeluargaPage({
     setValidationErrors(null)
 
     const formData = new FormData(e.currentTarget)
-    formData.append("id_kk", id.toString())
+    formData.append("id_kk", id)
 
     try {
       const result = await addAnggotaKeluarga(formData)
 
       if (result.error) {
         setError(result.error)
-        setValidationErrors(result.errors)
+        setValidationErrors(result.errors || null)
       } else if (result.success) {
         setSuccess("Anggota keluarga berhasil ditambahkan")
         // Redirect setelah 2 detik
@@ -118,7 +119,7 @@ export default function TambahAnggotaKeluargaPage({
                   </SelectTrigger>
                   <SelectContent>
                     {penduduk.map((p) => (
-                      <SelectItem key={p.id_pend} value={p.id_pend.toString()}>
+                      <SelectItem key={p.id_penduduk} value={p.id_penduduk}>
                         {p.nama} - {p.nik}
                       </SelectItem>
                     ))}
