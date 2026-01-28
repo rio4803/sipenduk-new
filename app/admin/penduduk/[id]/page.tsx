@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import Link from "next/link"
 import { useRouter, notFound } from "next/navigation"
 import { getPendudukById, deletePenduduk } from "../actions"
@@ -25,9 +25,9 @@ import { Pencil, Trash2 } from "lucide-react"
 export default function DetailPendudukPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const id = params.id
+  const {id} = use(params)
   const router = useRouter()
   const [penduduk, setPenduduk] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -44,7 +44,7 @@ export default function DetailPendudukPage({
         }
         setPenduduk(data)
       } catch (error) {
-        console.error("Error loading penduduk data:", error)
+        console.log("Error loading penduduk data:", error)
         setError("Gagal memuat data penduduk")
       } finally {
         setIsLoading(false)
@@ -138,41 +138,41 @@ export default function DetailPendudukPage({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">Nomor KK</h3>
-              <p className="text-base">{penduduk.no_kk}</p>
+              <p className="text-base">{penduduk?.no_kk || "-"}</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">NIK</h3>
-              <p className="text-base">{penduduk.nik}</p>
+              <p className="text-base">{penduduk?.nik}</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">Nama Lengkap</h3>
-              <p className="text-base">{penduduk.nama}</p>
+              <p className="text-base">{penduduk?.nama}</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">Tempat, Tanggal Lahir</h3>
               <p className="text-base">
-                {penduduk.tempat_lh}, {formatDate(penduduk.tgl_lh)}
+                {penduduk?.tempat_lahir || "-"}, {formatDate(penduduk?.tanggal_lahir) || "-"}
               </p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">Usia</h3>
-              <p className="text-base">{getAge(penduduk.tgl_lh)} tahun</p>
+              <p className="text-base">{getAge(penduduk?.tanggal_lahir) || "-"} tahun</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">Jenis Kelamin</h3>
-              <p className="text-base">{penduduk.jekel === "LK" ? "Laki-laki" : "Perempuan"}</p>
+              <p className="text-base">{penduduk?.jenis_kelamin === "LK" ? "Laki-laki" : "Perempuan"}</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">Agama</h3>
-              <p className="text-base">{penduduk.agama}</p>
+              <p className="text-base">{penduduk?.agama || "-"}</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">Status Perkawinan</h3>
-              <p className="text-base">{penduduk.kawin}</p>
+              <p className="text-base">{penduduk?.status_perkawinan || "-"}</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">Pekerjaan</h3>
-              <p className="text-base">{penduduk.pekerjaan}</p>
+              <p className="text-base">{penduduk?.pekerjaan || "-"}</p>
             </div>
           </div>
         </CardContent>
@@ -187,12 +187,12 @@ export default function DetailPendudukPage({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">Desa</h3>
-              <p className="text-base">{penduduk.desa}</p>
+              <p className="text-base">{penduduk?.desa || "-"}</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">RT/RW</h3>
               <p className="text-base">
-                {penduduk.rt}/{penduduk.rw}
+                {penduduk?.rt || "-"}/{penduduk?.rw || "-"}
               </p>
             </div>
           </div>
@@ -209,14 +209,14 @@ export default function DetailPendudukPage({
             <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
             <p
               className={`text-base ${
-                penduduk.status === "Ada"
+                penduduk?.status_penduduk == "Ada"
                   ? "text-green-600 dark:text-green-400"
-                  : penduduk.status === "Meninggal"
+                  : penduduk?.status_penduduk == "Meninggal"
                     ? "text-red-600 dark:text-red-400"
                     : "text-yellow-600 dark:text-yellow-400"
               }`}
             >
-              {penduduk.status || "Ada"}
+              {penduduk?.status_penduduk || "-"}
             </p>
           </div>
         </CardContent>

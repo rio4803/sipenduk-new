@@ -13,6 +13,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatDate(dateString: string) {
+  if(!dateString){
+    return null
+  }
   try {
     const date = new Date(dateString)
     return format(date, "dd MMMM yyyy", { locale: id })
@@ -62,6 +65,7 @@ export function isEdgeRuntime(): boolean {
 }
 
 export function getAge(dateString: string): number {
+  if(!dateString) return 0
   const today = new Date()
   const birthDate = new Date(dateString)
   let age = today.getFullYear() - birthDate.getFullYear()

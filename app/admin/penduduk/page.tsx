@@ -10,8 +10,8 @@ import { useEffect, useState } from "react"
 import { getPendudukData } from "./actions"
 
 export default function PendudukPage() {
-  const [penduduk, setPenduduk] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [penduduk, setPenduduk] = useState<any>([])
+  const [isLoading, setIsLoading] = useState<boolean>(true)
 
   useEffect(() => {
     async function loadData() {
@@ -30,12 +30,12 @@ export default function PendudukPage() {
 
   const columns = [
     {
-    id: "kk",
-    header: "Nomor KK",
-    cell: ({ row }) => {
-      const noKK = row.original.no_kk || "-"
-      return `${noKK}`
-    },
+      id: "no_kk",
+      header: "Nomor KK",
+      cell: ({ row }:{ row: any }) => {
+        const noKK = row.original.no_kk || "-"
+        return `${noKK}`
+      },
     },
     {
       accessorKey: "nik",
@@ -46,28 +46,28 @@ export default function PendudukPage() {
       header: "Nama",
     },
     {
-      accessorKey: "jekel",
+      accessorKey: "jenis_kelamin",
       header: "Jenis Kelamin",
-      cell: ({ row }) => <div>{row.original.jekel === "LK" ? "Laki-laki" : "Perempuan"}</div>,
+      cell: ({ row }:{ row: any }) => <div>{row.original.jenis_kelamin === "LK" ? "Laki-laki" : "Perempuan"}</div>,
     },
     {
-      accessorKey: "tempat_lh",
+      accessorKey: "tempat_lahir",
       header: "Tempat Lahir",
     },
     {
-      accessorKey: "tgl_lh",
+      accessorKey: "tanggal_lahir",
       header: "Tanggal Lahir",
-      cell: ({ row }) => <div>{formatDate(row.original.tgl_lh)}</div>,
+      cell: ({ row }:{ row: any }) => <div>{formatDate(row.original.tanggal_lahir) || "-"}</div>,
     },
     {
       accessorKey: "agama",
       header: "Agama",
     },
     {
-      accessorKey: "status",
+      accessorKey: "status_penduduk",
       header: "Status",
-      cell: ({ row }) => {
-        const status = row.original.status
+      cell: ({ row }:{ row: any }) => {
+        const status = row.original.status_penduduk
         let statusClass = ""
 
         switch (status) {
@@ -88,10 +88,10 @@ export default function PendudukPage() {
     {
       id: "actions",
       header: "Aksi",
-      cell: ({ row }) => (
+      cell: ({ row }:{ row: any }) => (
         <div className="flex gap-2">
           <Button asChild size="sm" variant="outline">
-            <Link href={`/admin/penduduk/${row.original.id_pend}`}>Detail</Link>
+            <Link href={`/admin/penduduk/${row.original.id}`}>Detail</Link>
           </Button>
         </div>
       ),

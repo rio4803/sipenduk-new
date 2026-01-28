@@ -3,14 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { getRedisData, getRedisKeys, setRedisData, deleteRedisData } from "@/lib/redis-service";
 import { z } from "zod";
+import { supabase } from "@/app/utils/supabase";
+import { generateRandomPassword } from "@/lib/utils";
 
-/* =====================================================
-   ===============  GET DATA KK ========================
-===================================================== */
+// get data kartu keluarga
+// DONE
 export async function getKKData() {
-  const kkKeys = await getRedisKeys("kk:*");
-  const kkList = await Promise.all(kkKeys.map(getRedisData));
-  return kkList.filter(Boolean);
+  const {data, error} = await supabase.from("kartu_keluarga").select("*")
+  if(error){
+    console.log(error)
+    return []
+  }
+  return data
 }
 
 /* =====================================================
@@ -19,82 +23,78 @@ export async function getKKData() {
 const pendudukSchema = z.object({
   nik: z.string().min(1),
   nama: z.string().min(1),
-  tempat_lh: z.string().min(1),
-  tgl_lh: z.string().min(1),
-  jekel: z.enum(["LK","PR"]),
+  tempat_lahir: z.string().min(1),
+  tanggal_lahir: z.string().min(1),
+  jenis_kelamin: z.enum(["LK","PR"]),
   desa: z.string().min(1),
   rt: z.string().min(1),
   rw: z.string().min(1),
   agama: z.string().min(1),
-  kawin: z.string().optional(),
+  status_perkawinan: z.string().optional(),
   pekerjaan: z.string().optional(),
-  id_kk: z.string().min(1),
-  hub_keluarga: z.string().min(1),
+  hubungan: z.string().optional(),
 });
 
-/* =====================================================
-   ===============  GET ALL PENDUDUK ===================
-===================================================== */
+// get data penduduk
+// DONE
 export async function getPendudukData() {
   try {
-    const pendudukKeys = await getRedisKeys("penduduk:*");
-    const pendudukList = await Promise.all(pendudukKeys.map(getRedisData));
-
-    const anggotaKeys = await getRedisKeys("anggota:*");
-    const anggotaList = await Promise.all(anggotaKeys.map(getRedisData));
-
-    const kkKeys = await getRedisKeys("kk:*");
-    const kkList = await Promise.all(kkKeys.map(getRedisData));
+    const {data: pendudukList, error: errPenduduk} = await supabase.from("penduduk").select("*")
+    const {data: anggotaList, error: errAnggota} = await supabase.from("anggota_kartu_keluarga").select("*")
+    const {data: kkList, error: errKK} = await supabase.from("kartu_keluarga").select("*")
+    if(errAnggota || errKK || errPenduduk){
+      console.log({errAnggota, errKK, errPenduduk})
+      return []
+    }
 
     const kkMap = new Map();
-    kkList.forEach((kk: any) => kk?.id_kk && kkMap.set(String(kk.id_kk), kk));
-
     const anggotaMap = new Map();
-    anggotaList.forEach((a: any) => a?.id_pend && anggotaMap.set(String(a.id_pend), a));
+    
+    kkList.forEach((kk) => kkMap.set(kk.id, kk));
+    anggotaList.forEach((a) => anggotaMap.set(a.id_penduduk, a));
 
-    return pendudukList
-      .filter(Boolean)
-      .map((p: any) => {
-        const pId = String(p.id_pend);
-        const anggota = anggotaMap.get(pId) || null;
-        const kk = anggota?.id_kk ? kkMap.get(String(anggota.id_kk)) : null;
+    const dataPenduduk = pendudukList.map((p) => {
+      const anggota = anggotaMap.get(p.id) || null;
+      const kk = anggota?.id_kk ? kkMap.get(anggota.id_kk) : null;
 
-        return {
-          ...p,
-          id_kk: p.id_kk || anggota?.id_kk || null,
-          hub_keluarga: p.hub_keluarga || anggota?.hubungan || "-",
-          no_kk: p.no_kk || kk?.no_kk || "-",
-          kepala: kk?.kepala || "-",
-        };
-      })
-      .sort((a, b) => a.nama.localeCompare(b.nama));
+      return {
+        ...p,
+        id_kk: anggota?.id_kk || "-",
+        hubungan: anggota?.hubungan || "-",
+        no_kk: kk?.no_kk || "-",
+        kepala: kk?.kepala || "-",
+      };
+    })
+    .sort((a, b) => a.nama.localeCompare(b.nama));
+    // console.log(dataPenduduk);
+    return dataPenduduk
   } catch (error) {
     console.error("Error fetching penduduk data:", error);
     return [];
   }
 }
 
-/* =====================================================
-   ===============  GET PENDUDUK BY ID =================
-===================================================== */
+// get data penduduk by id
+// DONE
 export async function getPendudukById(id: string) {
   try {
-    const penduduk = await getRedisData(`penduduk:${id}`);
-    if (!penduduk) return null;
-
-    const anggotaKeys = await getRedisKeys("anggota:*");
-    const anggotaList = await Promise.all(anggotaKeys.map(getRedisData));
-    const anggota = anggotaList.find((a: any) => a?.id_pend == id);
-
-    let kk = null;
-    if (anggota?.id_kk) kk = await getRedisData(`kk:${anggota.id_kk}`);
+    const {data: penduduk, error: errPenduduk} = await supabase.from("penduduk").select("*").eq("id", id).single()
+    if (!penduduk || errPenduduk) {
+      console.log(errPenduduk)
+      return null
+    }
+    
+    const {data: anggota, error: errAnggota} =  await supabase.from("anggota_kartu_keluarga").select("*, kartu_keluarga:id_kk (*)").eq("id_penduduk", id).single()
+    if (errAnggota) {
+      console.log(errAnggota);
+    }
 
     return {
       ...penduduk,
       id_kk: anggota?.id_kk || null,
-      hub_keluarga: anggota?.hubungan || "-",
-      no_kk: kk?.no_kk || "-",
-      kepala: kk?.kepala || "-",
+      hubungan: anggota?.hubungan || "-",
+      no_kk: anggota?.kartu_keluarga.no_kk || "-",
+      kepala: anggota?.kartu_keluarga.kepala || "-",
     };
   } catch (error) {
     console.error(`Error fetching penduduk ${id}:`, error);
@@ -105,51 +105,107 @@ export async function getPendudukById(id: string) {
 /* =====================================================
    ===============  CREATE PENDUDUK ====================
 ===================================================== */
+// export async function createPenduduk(formData: FormData) {
+//   const id_penduduk = crypto.randomUUID()
+  
+//   const id_kk = formData.get("id_kk");
+//   if (!id_kk) {
+//     return { error: "ID KK wajib diisi" };
+//   }
+
+//   // const {data: kkData, error} = await supabase.from("kartu_keluarga").select("*").eq("id", id).single()
+//   // if(error){
+//   //   return { error: "terjadi masalah" };
+//   // }
+  
+//   // Data penduduk
+//   const newPenduduk = {
+//     id: id_penduduk,
+//     id_kk,
+//     nik: formData.get("nik"),
+//     nama: formData.get("nama"),
+//     tempat_lahir: formData.get("tempat_lahir"),
+//     tanggal_lahir: formData.get("tanggal_lahir"),
+//     jenis_kelamin: formData.get("jenis_kelamin"),
+//     desa: formData.get("desa"),
+//     rt: formData.get("rt"),
+//     rw: formData.get("rw"),
+//     agama: formData.get("agama"),
+//     status_perkawinan: formData.get("status_perkawinan"),
+//     pekerjaan: formData.get("pekerjaan"),
+//   };
+
+
+//   return {
+//     success: true,
+//     message: "Penduduk berhasil ditambahkan",
+//   };
+// }
+
 export async function createPenduduk(formData: FormData) {
-  const idKK = formData.get("id_kk");
+  const id_kk = formData.get("id_kk")
+  const id_penduduk = crypto.randomUUID()
 
-  if (!idKK) {
-    return { error: "ID KK wajib diisi" };
+  try {
+    // validate form
+    const validatedFields = pendudukSchema.safeParse({
+      nik: formData.get("nik"),
+      nama: formData.get("nama"),
+      tempat_lahir: formData.get("tempat_lahir"),
+      tanggal_lahir: formData.get("tanggal_lahir"),
+      jenis_kelamin: formData.get("jenis_kelamin"),
+      desa: formData.get("desa"),
+      rt: formData.get("rt"),
+      rw: formData.get("rw"),
+      agama: formData.get("agama"),
+      status_perkawinan: formData.get("status_perkawinan"),
+      pekerjaan: formData.get("pekerjaan"),
+    })
+    if (!validatedFields.success) {
+      return {
+        error: "Validasi gagal",
+        errors: validatedFields.error.flatten().fieldErrors,
+      }
+    }
+    
+    // insert penduduk
+    const {error: errInsertPenduduk} = await supabase.from("penduduk").insert(validatedFields.data)
+    if(errInsertPenduduk){
+      if(errInsertPenduduk.code == "23505"){
+        return { error: "NIK sudah terdaftar" };
+      }
+      return { error: "terjadi masalah pada tabel penduduk" };
+    }
+    
+    // add penduduk to anggota kartu keluarga
+    const {error: errAddAnggota} = await supabase.from("anggota_kartu_keluarga").insert({id_penduduk, id_kk})
+    if(errAddAnggota){
+      console.log(errAddAnggota)
+      return { error: "terjadi masalah pada tabel anggota" };
+    }
+
+    // buat akun penduduk
+    const password = generateRandomPassword(8)
+    const newUser = {
+      name: validatedFields.data.nama,
+      username: validatedFields.data.nik,
+      password: password,
+      role: "Penduduk" as const,
+    }
+    await supabase.from("pengguna").insert(newUser)
+
+    return {
+      success: true,
+      data: validatedFields.data,
+      user: {
+        username: newUser.username,
+        password: password,
+      },
+    }
+  } catch (error) {
+    console.error("Error creating penduduk:", error)
+    return { error: "Gagal menambahkan penduduk" }
   }
-
-  // Ambil data KK
-  const kkData = await getRedisData(`kk:${idKK}`);
-  if (!kkData) {
-    return { error: "KK tidak ditemukan" };
-  }
-
-  // Buat ID penduduk baru
-  const keys = await getRedisKeys("penduduk:*");
-  const nextId = keys.length > 0 ? keys.length + 1 : 1;
-
-  // Data penduduk
-  const newPenduduk = {
-    id_pend: nextId,
-    id_kk: Number(idKK),
-    no_kk: kkData.no_kk, // WAJIB supaya tampil otomatis
-    nik: formData.get("nik"),
-    nama: formData.get("nama"),
-    tempat_lh: formData.get("tempat_lh"),
-    tgl_lh: formData.get("tgl_lh"),
-    jekel: formData.get("jekel"),
-    desa: formData.get("desa"),
-    rt: formData.get("rt"),
-    rw: formData.get("rw"),
-    agama: formData.get("agama"),
-    kawin: formData.get("kawin"),
-    pekerjaan: formData.get("pekerjaan"),
-  };
-
-  // Simpan penduduk
-  await setRedisData(`penduduk:${nextId}`, newPenduduk);
-
-  // Tambahkan otomatis ke tabel anggota keluarga
-  await addToAnggotaKeluarga(Number(idKK), nextId, "Anak");
-
-  return {
-    success: true,
-    message: "Penduduk berhasil ditambahkan",
-  };
 }
 
 // =====================================
@@ -190,66 +246,50 @@ async function addToAnggotaKeluarga(id_kk, id_pend, hubungan) {
   }
 }
 
-/* =====================================================
-   ===============  UPDATE PENDUDUK ====================
-===================================================== */
+// update penduduk
+// DONE
 export async function updatePenduduk(id: string, formData: FormData) {
   try {
     const validatedFields = pendudukSchema.safeParse({
       nik: formData.get("nik"),
       nama: formData.get("nama"),
-      tempat_lh: formData.get("tempat_lh"),
-      tgl_lh: formData.get("tgl_lh"),
-      jekel: formData.get("jekel"),
+      tempat_lahir: formData.get("tempat_lahir"),
+      tanggal_lahir: formData.get("tanggal_lahir"),
+      jenis_kelamin: formData.get("jenis_kelamin"),
       desa: formData.get("desa"),
       rt: formData.get("rt"),
       rw: formData.get("rw"),
       agama: formData.get("agama"),
-      kawin: formData.get("kawin"),
+      status_perkawinan: formData.get("status_perkawinan"),
       pekerjaan: formData.get("pekerjaan"),
-      id_kk: formData.get("id_kk"),
-      hub_keluarga: formData.get("hub_keluarga"),
     });
 
     if (!validatedFields.success) {
+      console.log(validatedFields.error)
       return {
         error: "Validasi gagal",
         errors: validatedFields.error.flatten().fieldErrors,
       };
     }
 
-    const penduduk = await getRedisData(`penduduk:${id}`);
-    if (!penduduk) return { error: "Penduduk tidak ditemukan" };
-
-    const updatedPenduduk = {
-      ...penduduk,
-      ...validatedFields.data,
-      id_kk: Number(validatedFields.data.id_kk),
-    };
-
-    await setRedisData(`penduduk:${id}`, updatedPenduduk);
-
-    revalidatePath(`/admin/penduduk/${id}`);
-    revalidatePath("/admin/penduduk");
-
-    return { success: true, data: updatedPenduduk };
+    const {error} = await supabase.from("penduduk").update(validatedFields.data).eq("id", id)
+    if(error) return {error: "Terjadi masalah"}
+    return { success: true};
   } catch (error) {
     console.error("Error updating penduduk:", error);
     return { error: "Gagal memperbarui penduduk" };
   }
 }
 
-/* =====================================================
-   ===============  DELETE PENDUDUK ====================
-===================================================== */
+// delete penduduk
+// DONE
 export async function deletePenduduk(id: string) {
   try {
-    const penduduk = await getRedisData(`penduduk:${id}`);
-    if (!penduduk) return { error: "Penduduk tidak ditemukan" };
-
-    await deleteRedisData(`penduduk:${id}`);
-
-    revalidatePath("/admin/penduduk");
+    const {error} = await supabase.from("penduduk").delete().eq("id", id)
+    if(error){
+      console.log(error)
+      return {error: "terjadi masalah"}
+    }
     return { success: true };
   } catch (error) {
     console.error("Error deleting penduduk:", error);

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import Link from "next/link"
 import { useRouter, notFound } from "next/navigation"
 import { getPendudukById, updatePenduduk } from "../../actions"
@@ -19,9 +19,9 @@ import { format } from "date-fns"
 export default function EditPendudukPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const id = params.id
+  const {id} = use(params)
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -29,7 +29,7 @@ export default function EditPendudukPage({
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null)
   const [penduduk, setPenduduk] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [birthDate, setBirthDate] = useState<Date | null>(null)
+  const [birthDate, setBirthDate] = useState<any>(null)
 
   useEffect(() => {
     async function loadData() {
@@ -41,8 +41,8 @@ export default function EditPendudukPage({
         setPenduduk(data)
 
         // Set birth date if available
-        if (data.tgl_lh) {
-          setBirthDate(new Date(data.tgl_lh))
+        if (data.tanggal_lahir) {
+          setBirthDate(new Date(data.tanggal_lahir))
         }
       } catch (error) {
         console.error("Error loading penduduk data:", error)
@@ -68,7 +68,7 @@ export default function EditPendudukPage({
     if (birthDate) {
       // Gunakan format untuk memastikan tanggal yang tepat, tidak terpengaruh timezone
       const formattedDate = format(birthDate, "yyyy-MM-dd")
-      formData.set("tgl_lh", formattedDate)
+      formData.set("tanggal_lahir", formattedDate)
     }
 
     try {
@@ -90,6 +90,7 @@ export default function EditPendudukPage({
       setError("Terjadi kesalahan. Silakan coba lagi.")
     } finally {
       setIsPending(false)
+      setTimeout(() => {router.push(`/admin/penduduk/${id}`)}, 2000)
     }
   }
 
@@ -130,16 +131,16 @@ export default function EditPendudukPage({
                 <Input id="nama" name="nama" defaultValue={penduduk.nama} required />
               </FormField>
 
-              <FormField id="tempat_lh" label="Tempat Lahir" required>
-                <Input id="tempat_lh" name="tempat_lh" defaultValue={penduduk.tempat_lh} required />
+              <FormField id="tempat_lahir" label="Tempat Lahir" required>
+                <Input id="tempat_lahir" name="tempat_lahir" defaultValue={penduduk.tempat_lahir} required />
               </FormField>
 
-              <FormField id="tgl_lh" label="Tanggal Lahir" required>
-                <DatePicker id="tgl_lh" name="tgl_lh" selected={birthDate} onSelect={setBirthDate} />
+              <FormField id="tanggal_lahir" label="Tanggal Lahir" required>
+                <DatePicker id="tanggal_lahir" name="tanggal_lahir" selected={birthDate} onSelect={setBirthDate} />
               </FormField>
 
-              <FormField id="jekel" label="Jenis Kelamin" required>
-                <Select name="jekel" defaultValue={penduduk.jekel} required>
+              <FormField id="jenis_kelamin" label="Jenis Kelamin" required>
+                <Select name="jenis_kelamin" defaultValue={penduduk.jenis_kelamin} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih jenis kelamin" />
                   </SelectTrigger>
@@ -181,7 +182,7 @@ export default function EditPendudukPage({
               </div>
 
               <FormField id="kawin" label="Status Perkawinan" required>
-                <Select name="kawin" defaultValue={penduduk.kawin} required>
+                <Select name="status_perkawinan" defaultValue={penduduk.status_perkawinan} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih status" />
                   </SelectTrigger>
@@ -198,8 +199,8 @@ export default function EditPendudukPage({
                 <Input id="pekerjaan" name="pekerjaan" defaultValue={penduduk.pekerjaan} required />
               </FormField>
 
-              <FormField id="status" label="Status" required>
-                <Select name="status" defaultValue={penduduk.status || "Ada"} required>
+              {/* <FormField id="status" label="Status" required>
+                <Select name="status_penduduk" defaultValue={penduduk.status_penduduk || "Ada"} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih status" />
                   </SelectTrigger>
@@ -209,7 +210,7 @@ export default function EditPendudukPage({
                     <SelectItem value="Pindah">Pindah</SelectItem>
                   </SelectContent>
                 </Select>
-              </FormField>
+              </FormField> */}
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">

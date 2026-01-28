@@ -4,7 +4,6 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { createPenduduk } from "@/app/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,6 +12,7 @@ import { FormStatus } from "@/components/form-status"
 import { DatePicker } from "@/components/ui/date-picker.tsx"
 import { FormField } from "@/components/ui/form-field"
 import { format } from "date-fns"
+import { getKKData, createPenduduk } from "../actions"
 
 export default function TambahPendudukPage() {
   const router = useRouter()
@@ -23,17 +23,16 @@ export default function TambahPendudukPage() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null)
   const [userCredentials, setUserCredentials] = useState<{ username: string; password: string } | null>(null)
 
-  const [birthDate, setBirthDate] = useState<Date | null>(null)
+  const [birthDate, setBirthDate] = useState<any>(null)
 
   // LIST KEPALA KELUARGA
-  const [kepalaKeluargaList, setKepalaKeluargaList] = useState([])
+  const [kepalaKeluargaList, setKepalaKeluargaList] = useState<any[]>([])
 
   useEffect(() => {
     async function fetchKK() {
       try {
-        const response = await fetch(`${window.location.origin}/api/kk-list`)
-        const result = await response.json()
-        setKepalaKeluargaList(result)
+        const kkData = await getKKData()
+        setKepalaKeluargaList(kkData)
       } catch (error) {
         console.error("Gagal mengambil list KK:", error)
       }
@@ -45,13 +44,13 @@ export default function TambahPendudukPage() {
     id_kk: "",
     nik: "",
     nama: "",
-    tempat_lh: "",
-    jekel: "",
+    tempat_lahir: "",
+    jenis_kelamin: "",
     agama: "",
     desa: "",
     rt: "",
     rw: "",
-    kawin: "",
+    status_perkawinan: "",
     pekerjaan: "",
   })
 
@@ -92,14 +91,14 @@ export default function TambahPendudukPage() {
     else if (!/^\d{16}$/.test(formData.nik)) errors.nik = "NIK harus 16 digit angka"
 
     if (!formData.nama) errors.nama = "Nama wajib diisi"
-    if (!formData.tempat_lh) errors.tempat_lh = "Tempat lahir wajib diisi"
-    if (!birthDate) errors.tgl_lh = "Tanggal lahir wajib diisi"
-    if (!formData.jekel) errors.jekel = "Jenis kelamin wajib diisi"
+    if (!formData.tempat_lahir) errors.tempat_lahir = "Tempat lahir wajib diisi"
+    if (!birthDate) errors.tanggal_lahir = "Tanggal lahir wajib diisi"
+    if (!formData.jenis_kelamin) errors.jenis_kelamin = "Jenis kelamin wajib diisi"
     if (!formData.agama) errors.agama = "Agama wajib diisi"
     if (!formData.desa) errors.desa = "Desa wajib diisi"
     if (!formData.rt) errors.rt = "RT wajib diisi"
     if (!formData.rw) errors.rw = "RW wajib diisi"
-    if (!formData.kawin) errors.kawin = "Status kawin wajib diisi"
+    if (!formData.status_perkawinan) errors.status_perkawinan = "Status kawin wajib diisi"
     if (!formData.pekerjaan) errors.pekerjaan = "Pekerjaan wajib diisi"
 
     setFormErrors(errors)
@@ -128,7 +127,7 @@ export default function TambahPendudukPage() {
       // Set nilai dari state manual
       formDataObj.set("id_kk", formData.id_kk);
       if (birthDate) {
-        formDataObj.set("tgl_lh", format(birthDate, "yyyy-MM-dd"));
+        formDataObj.set("tanggal_lahir", format(birthDate, "yyyy-MM-dd"));
       }
 
       // Kirim ke server
@@ -149,13 +148,13 @@ export default function TambahPendudukPage() {
           id_kk: "",
           nik: "",
           nama: "",
-          tempat_lh: "",
-          jekel: "",
+          tempat_lahir: "",
+          jenis_kelamin: "",
           agama: "",
           desa: "",
           rt: "",
           rw: "",
-          kawin: "",
+          status_perkawinan: "",
           pekerjaan: "",
         });
         setBirthDate(null);
@@ -219,7 +218,7 @@ export default function TambahPendudukPage() {
                 <option value="">Pilih Kepala Keluarga</option>
 
                 {kepalaKeluargaList.map((kk: any) => (
-                  <option key={kk.id_kk} value={kk.id_kk}>
+                  <option key={kk.id} value={kk.id}>
                     {kk.no_kk} - {kk.kepala}
                   </option>
                 ))}
@@ -245,19 +244,19 @@ export default function TambahPendudukPage() {
                 <Input id="nama" name="nama" value={formData.nama} onChange={handleInputChange} />
               </FormField>
 
-              <FormField id="tempat_lh" label="Tempat Lahir" required error={formErrors.tempat_lh}>
-                <Input id="tempat_lh" name="tempat_lh" value={formData.tempat_lh} onChange={handleInputChange} />
+              <FormField id="tempat_lahir" label="Tempat Lahir" required error={formErrors.tempat_lahir}>
+                <Input id="tempat_lahir" name="tempat_lahir" value={formData.tempat_lahir} onChange={handleInputChange} />
               </FormField>
 
-              <FormField id="tgl_lh" label="Tanggal Lahir" required error={formErrors.tgl_lh}>
-                <DatePicker id="tgl_lh" name="tgl_lh" selected={birthDate} onSelect={setBirthDate} />
+              <FormField id="tanggal_lahir" label="Tanggal Lahir" required error={formErrors.tanggal_lahir}>
+                <DatePicker id="tanggal_lahir" name="tanggal_lahir" selected={birthDate} onSelect={setBirthDate} />
               </FormField>
 
-              <FormField id="jekel" label="Jenis Kelamin" required error={formErrors.jekel}>
+              <FormField id="jenis_kelamin" label="Jenis Kelamin" required error={formErrors.jenis_kelamin}>
                 <Select
-                  name="jekel"
-                  value={formData.jekel}
-                  onValueChange={(value) => handleSelectChange("jekel", value)}
+                  name="jenis_kelamin"
+                  value={formData.jenis_kelamin}
+                  onValueChange={(value) => handleSelectChange("jenis_kelamin", value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih jenis kelamin" />
@@ -305,9 +304,9 @@ export default function TambahPendudukPage() {
 
               <FormField id="kawin" label="Status Perkawinan" required error={formErrors.kawin}>
                 <Select
-                  name="kawin"
-                  value={formData.kawin}
-                  onValueChange={(value) => handleSelectChange("kawin", value)}
+                  name="status_perkawinan"
+                  value={formData.status_perkawinan}
+                  onValueChange={(value) => handleSelectChange("status_perkawinan", value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih status kawin" />
