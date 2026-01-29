@@ -57,7 +57,7 @@ export default function TambahKelahiranPage() {
 
     // Add the date from the DatePicker component
     if (birthDate) {
-      formData.set("tgl_lh", birthDate.toISOString().split("T")[0])
+      formData.set("tanggal_lahir", birthDate.toISOString().split("T")[0])
     }
 
     try {
@@ -65,7 +65,6 @@ export default function TambahKelahiranPage() {
 
       if (result.error) {
         setError(result.error)
-        setValidationErrors(result.errors || null)
       } else if (result.success) {
         setSuccess("Data kelahiran berhasil ditambahkan")
         
@@ -141,17 +140,17 @@ export default function TambahKelahiranPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="tempat_lh">Tempat Lahir</Label>
-                <Input id="tempat_lh" name="tempat_lh" placeholder="Masukkan tempat lahir" />
+                <Label htmlFor="tempat_lahir">Tempat Lahir</Label>
+                <Input id="tempat_lahir" name="tempat_lahir" placeholder="Masukkan tempat lahir" />
               </div>
 
               {/* ✅ PERBAIKAN DI SINI – DatePicker full width + match input height */}
               <div className="space-y-2">
-                <Label htmlFor="tgl_lh">Tanggal Lahir</Label>
+                <Label htmlFor="tanggal_lahir">Tanggal Lahir</Label>
                 <div className="w-full">
                   <DatePicker
-                    id="tgl_lh"
-                    name="tgl_lh"
+                    id="tanggal_lahir"
+                    name="tanggal_lahir"
                     selected={birthDate}
                     onSelect={setBirthDate}
                     required
@@ -161,8 +160,8 @@ export default function TambahKelahiranPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="jekel">Jenis Kelamin</Label>
-                <Select name="jekel" required>
+                <Label htmlFor="jenis_kelamin">Jenis Kelamin</Label>
+                <Select name="jenis_kelamin" required>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih jenis kelamin" />
                   </SelectTrigger>
@@ -181,7 +180,7 @@ export default function TambahKelahiranPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {kartuKeluarga.map((kk) => (
-                      <SelectItem key={kk.id_kk} value={kk.id_kk.toString()}>
+                      <SelectItem key={kk.id} value={kk.id}>
                         {kk.no_kk} - {kk.kepala}
                       </SelectItem>
                     ))}

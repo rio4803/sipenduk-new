@@ -26,7 +26,8 @@ export async function getKelahiranData() {
       }),
     )
 
-    return kelahiranWithKeluarga.filter(Boolean)
+    console.log(kelahiranWithKeluarga);
+    return kelahiranWithKeluarga
   } catch (error) {
     console.error("Error fetching kelahiran data:", error)
     throw new Error("Gagal mengambil data kelahiran")
@@ -56,8 +57,8 @@ export async function getKelahiranById(id: number) {
 // Schema validasi untuk kelahiran
 const kelahiranSchema = z.object({
   nama: z.string().min(1, "Nama harus diisi"),
-  tgl_lh: z.string().min(1, "Tanggal lahir harus diisi"),
-  jekel: z.enum(["LK", "PR"], {
+  tanggal_lahir: z.string().min(1, "Tanggal lahir harus diisi"),
+  jenis_kelamin: z.enum(["LK", "PR"], {
     errorMap: () => ({ message: "Jenis kelamin harus dipilih" }),
   }),
   id_kk: z.string().min(1, "Kartu keluarga harus dipilih"),
@@ -68,27 +69,31 @@ export async function createKelahiran(formData: FormData, userId: number) {
     // =====================================
     // VALIDASI + FIELD BARU
     // =====================================
-    const validated = kelahiranSchema.safeParse({
-      nama: formData.get("nama"),
-      tgl_lh: formData.get("tgl_lh"),
-      jekel: formData.get("jekel"),
-      id_kk: formData.get("id_kk"),
-    })
+    // const validated = kelahiranSchema.safeParse({
+    //   nama: formData.get("nama"),
+    //   tanggal_lahir: formData.get("tgl_lh"),
+    //   jenis_kelamin: formData.get("jekel"),
+    //   id_kk: formData.get("id_kk"),
+    // })
 
-    if (!validated.success) {
-      return { error: "Validasi gagal", errors: validated.error.flatten().fieldErrors }
+    // if (!validated.success) {
+    //   return { error: "Validasi gagal", errors: validated.error.flatten().fieldErrors }
+    // }
+
+    const dataField = {
+      nama: formData.get("nama") || null,
+      tanggal_lahir: formData.get("tanggal_lahir") || null,
+      jenis_kelamin: formData.get("jenis_kelamin") || null,
+      id_kk: formData.get("id_kk") || null,
+      nik: formData.get("nik") || null,
+      tempat_lh: formData.get("tempat_lh") || null,
+      desa: formData.get("desa") || null,
+      rt: formData.get("rt") || null,
+      rw: formData.get("rw") || null,
+      agama: formData.get("agama") || null
     }
-
-    const { nama, tgl_lh, jekel, id_kk } = validated.data
-
-    // 🔵 FIELD BARU DI FORM (langsung ambil tanpa validasi ketat)
-    const nik = formData.get("nik")?.toString() || ""
-    const tempat_lh = formData.get("tempat_lh")?.toString() || "-"
-    const desa = formData.get("desa")?.toString() || "-"
-    const rt = formData.get("rt")?.toString() || "-"
-    const rw = formData.get("rw")?.toString() || "-"
-    const agama = formData.get("agama")?.toString() || "-"
-
+    console.log(dataField)
+    return {error: "Terjadi masalah"}
     // =====================================
     // BUAT ID PENDUDUK BARU
     // =====================================
