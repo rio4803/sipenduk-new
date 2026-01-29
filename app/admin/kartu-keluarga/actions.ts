@@ -1,9 +1,6 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
-import { getRedisData, getRedisKeys, setRedisData, deleteRedisData } from "@/lib/redis-service"
 import { z } from "zod"
-import { AnggotaKeluarga, KartuKeluarga } from "@/lib/dummy-data"
 import { supabase } from "@/app/utils/supabase"
 
 // Schema validasi untuk kartu keluarga
@@ -62,14 +59,14 @@ export async function getAnggotaKeluargaWithDetail(id: string) {
 
     // === SORTING BARU DI SINI ===
     const order = {
-      Suami: "1",
-      Istri: "2",
-      Anak: "3",
+      Suami: 1,
+      Istri: 2,
+      Anak: 3,
     }
     
     anggotaWithDetail.sort((a, b) => {
-      const orderA = order[a.hubungan]
-      const orderB = order[b.hubungan]
+      const orderA = order[a.hubungan as keyof typeof order]
+      const orderB = order[b.hubungan as keyof typeof order]
       return orderA - orderB
     })
     return anggotaWithDetail
@@ -174,7 +171,6 @@ export async function createKartuKeluarga(formData: FormData) {
   }
 }
 
-
 // Fungsi untuk memperbarui data kartu keluarga
 // DONE
 export async function updateKartuKeluarga(id: string, formData: FormData) {
@@ -204,8 +200,6 @@ export async function updateKartuKeluarga(id: string, formData: FormData) {
       return { error: "Nomor KK sudah digunakan oleh kartu keluarga lain" }
     }
     
-    revalidatePath(`/admin/kartu-keluarga/${id}`)
-    revalidatePath("/admin/kartu-keluarga")
     return { success: true, data: validatedFields.data }
   } catch (error) {
     console.error("Error updating kartu keluarga:", error)
@@ -214,24 +208,13 @@ export async function updateKartuKeluarga(id: string, formData: FormData) {
 }
 
 // Fungsi untuk menghapus kartu keluarga
+// DONE
 export async function deleteKartuKeluarga(id: string) {
   try {
-    // Periksa apakah kartu keluarga ada
-    const keluarga = await getRedisData(`kk:${id}`)
-    if (!keluarga) {
-      return { error: "Kartu keluarga tidak ditemukan" }
+    const deleteKK = await supabase.from("kartu_keluarga").delete().eq("id", id)
+    if(deleteKK.error){
+      return { error: "Terjadi masalah saat menghapus KK" }
     }
-
-    // Periksa apakah kartu keluarga memiliki anggota
-    const anggotaKeluarga = await getAnggotaKeluargaWithDetail(id)
-    if (anggotaKeluarga.length > 0) {
-      return { error: "Kartu keluarga masih memiliki anggota, hapus anggota terlebih dahulu" }
-    }
-
-    // Hapus kartu keluarga
-    await deleteRedisData(`kk:${id}`)
-
-    revalidatePath("/admin/kartu-keluarga")
     return { success: true }
   } catch (error) {
     console.error("Error deleting kartu keluarga:", error)
@@ -240,28 +223,34 @@ export async function deleteKartuKeluarga(id: string) {
 }
 
 // Fungsi untuk menambahkan anggota keluarga
+// DONE
 export async function addAnggotaKeluarga(formData: FormData) {
   try {
     const id_kk = formData.get("id_kk") as string
-    const id_penduduk = formData.get("id_pend") as string
+    const id_penduduk = formData.get("id_penduduk") as string
     const hubungan = formData.get("hubungan") as string
 
     if (!id_kk || !id_penduduk || !hubungan) {
       return { error: "Data tidak lengkap" }
     }
 
-    
     const addAnggota = await supabase.from("anggota_kartu_keluarga").insert({
       id_kk,
       id_penduduk,
       hubungan
     })
-    if(addAnggota.error){
+    if(addAnggota.error?.code == "23505" ){
+      const updateAnggota = await supabase.from("anggota_kartu_keluarga").update({id_kk, id_penduduk, hubungan}).eq("id_penduduk", id_penduduk)
+      if(updateAnggota.error){
+        console.log(updateAnggota.error)
+        return { error: "Terjadi masalah saat memperbarui anggota"}
+      }
+    } else if(addAnggota.error && addAnggota.error?.code != "23505") {
       console.log(addAnggota.error)
-      return { error: "Terjadi masalah. Gagal menambahkan anggota keluarga" }
-    }  
-  
-    return { error: true}
+      return { error: "Terjadi masalah saat menambahkan anggota keluarga"}
+    }
+    
+    return { error: null}
   } catch (error) {
     console.error("Error adding anggota keluarga:", error)
     return { error: "Gagal menambahkan anggota keluarga" }

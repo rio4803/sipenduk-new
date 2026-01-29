@@ -1,25 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { getRedisData, getRedisKeys, setRedisData, deleteRedisData } from "@/lib/redis-service";
 import { z } from "zod";
 import { supabase } from "@/app/utils/supabase";
 import { generateRandomPassword } from "@/lib/utils";
 
-// get data kartu keluarga
-// DONE
-export async function getKKData() {
-  const {data, error} = await supabase.from("kartu_keluarga").select("*")
-  if(error){
-    console.log(error)
-    return []
-  }
-  return data
-}
-
-/* =====================================================
-   ===============  VALIDATION SCHEMA ==================
-===================================================== */
+// validation schema
 const pendudukSchema = z.object({
   nik: z.string().min(1),
   nama: z.string().min(1),
@@ -34,6 +19,17 @@ const pendudukSchema = z.object({
   pekerjaan: z.string().optional(),
   hubungan: z.string().optional(),
 });
+
+// get data kartu keluarga
+// DONE
+export async function getKKData() {
+  const {data, error} = await supabase.from("kartu_keluarga").select("*")
+  if(error){
+    console.log(error)
+    return []
+  }
+  return data
+}
 
 // get data penduduk
 // DONE
@@ -66,7 +62,6 @@ export async function getPendudukData() {
       };
     })
     .sort((a, b) => a.nama.localeCompare(b.nama));
-    // console.log(dataPenduduk);
     return dataPenduduk
   } catch (error) {
     console.error("Error fetching penduduk data:", error);
@@ -102,46 +97,8 @@ export async function getPendudukById(id: string) {
   }
 }
 
-/* =====================================================
-   ===============  CREATE PENDUDUK ====================
-===================================================== */
-// export async function createPenduduk(formData: FormData) {
-//   const id_penduduk = crypto.randomUUID()
-  
-//   const id_kk = formData.get("id_kk");
-//   if (!id_kk) {
-//     return { error: "ID KK wajib diisi" };
-//   }
-
-//   // const {data: kkData, error} = await supabase.from("kartu_keluarga").select("*").eq("id", id).single()
-//   // if(error){
-//   //   return { error: "terjadi masalah" };
-//   // }
-  
-//   // Data penduduk
-//   const newPenduduk = {
-//     id: id_penduduk,
-//     id_kk,
-//     nik: formData.get("nik"),
-//     nama: formData.get("nama"),
-//     tempat_lahir: formData.get("tempat_lahir"),
-//     tanggal_lahir: formData.get("tanggal_lahir"),
-//     jenis_kelamin: formData.get("jenis_kelamin"),
-//     desa: formData.get("desa"),
-//     rt: formData.get("rt"),
-//     rw: formData.get("rw"),
-//     agama: formData.get("agama"),
-//     status_perkawinan: formData.get("status_perkawinan"),
-//     pekerjaan: formData.get("pekerjaan"),
-//   };
-
-
-//   return {
-//     success: true,
-//     message: "Penduduk berhasil ditambahkan",
-//   };
-// }
-
+// create penduduk baru
+// DONE
 export async function createPenduduk(formData: FormData) {
   const id_kk = formData.get("id_kk")
   const id_penduduk = crypto.randomUUID()
@@ -205,44 +162,6 @@ export async function createPenduduk(formData: FormData) {
   } catch (error) {
     console.error("Error creating penduduk:", error)
     return { error: "Gagal menambahkan penduduk" }
-  }
-}
-
-// =====================================
-// FIX FINAL – AUTO ADD ANGGOTA + KK:ANGGOTA
-// =====================================
-async function addToAnggotaKeluarga(id_kk, id_pend, hubungan) {
-  try {
-    // Cari semua anggota
-    const keys = await getRedisKeys("anggota:*");
-    const all = await Promise.all(keys.map(getRedisData));
-    const list = all.filter(a => a);
-
-    const newId =
-      list.length > 0 ? Math.max(...list.map(a => a.id_anggota)) + 1 : 1;
-
-    const newAnggota = {
-      id_anggota: newId,
-      id_kk,
-      id_pend,
-      hubungan,
-    };
-
-    // Simpan anggota:xx
-    await setRedisData(`anggota:${newId}`, newAnggota);
-
-    // Masukkan ke list kk:anggota:ID
-    const kkKey = `kk:anggota:${id_kk}`;
-    let kkList = await getRedisData(kkKey);
-
-    if (!Array.isArray(kkList)) kkList = [];
-
-    kkList.push(newAnggota);
-
-    await setRedisData(kkKey, kkList);
-
-  } catch (err) {
-    console.error("Error add anggota:", err);
   }
 }
 

@@ -36,8 +36,6 @@ export default function TambahAnggotaKeluargaPage({
     async function loadData() {
       try {
         const [kkData, pendudukData] = await Promise.all([getKartuKeluargaById(id), getPendudukData()])
-        console.log({pendudukData})
-        console.log({kkData})
         if (!kkData) {
           notFound()
         }
@@ -45,7 +43,8 @@ export default function TambahAnggotaKeluargaPage({
         setKK(kkData)
 
         // Filter penduduk yang belum menjadi anggota keluarga
-        const filteredPenduduk = pendudukData.filter((p) => p.status === "Ada")
+        const filteredPenduduk = pendudukData.filter((p) => p.status_penduduk == "Ada")
+        console.log(filteredPenduduk)
         setPenduduk(filteredPenduduk)
       } catch (error) {
         console.error("Error loading data:", error)
@@ -75,8 +74,7 @@ export default function TambahAnggotaKeluargaPage({
 
       if (result.error) {
         setError(result.error)
-        setValidationErrors(result.errors || null)
-      } else if (result.success) {
+      } else {
         setSuccess("Anggota keluarga berhasil ditambahkan")
         // Redirect setelah 2 detik
         setTimeout(() => {
@@ -112,14 +110,14 @@ export default function TambahAnggotaKeluargaPage({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="id_pend">Penduduk</Label>
-                <Select name="id_pend" required>
+                <Label htmlFor="id_penduduk">Penduduk</Label>
+                <Select name="id_penduduk" required>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih penduduk" />
                   </SelectTrigger>
                   <SelectContent>
                     {penduduk.map((p) => (
-                      <SelectItem key={p.id_penduduk} value={p.id_penduduk}>
+                      <SelectItem key={p.id} value={p.id}>
                         {p.nama} - {p.nik}
                       </SelectItem>
                     ))}

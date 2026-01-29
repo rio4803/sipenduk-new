@@ -1,6 +1,6 @@
 // Types based on the database schema
 export type Penduduk = {
-  id_penduduk: string
+  id: string
   nik: string
   nama: string
   tempat_lh: string
