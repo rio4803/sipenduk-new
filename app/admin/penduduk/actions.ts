@@ -169,7 +169,7 @@ export async function createPenduduk(formData: FormData) {
     }
     
     // insert penduduk
-    const {error: errInsertPenduduk} = await supabase.from("penduduk").insert(validatedFields.data)
+    const {data: penduduk, error: errInsertPenduduk} = await supabase.from("penduduk").insert(validatedFields.data).select().single()
     if(errInsertPenduduk){
       if(errInsertPenduduk.code == "23505"){
         return { error: "NIK sudah terdaftar" };
@@ -178,7 +178,7 @@ export async function createPenduduk(formData: FormData) {
     }
     
     // add penduduk to anggota kartu keluarga
-    const {error: errAddAnggota} = await supabase.from("anggota_kartu_keluarga").insert({id_penduduk, id_kk})
+    const {error: errAddAnggota} = await supabase.from("anggota_kartu_keluarga").insert({id_penduduk: penduduk.id, id_kk})
     if(errAddAnggota){
       console.log(errAddAnggota)
       return { error: "terjadi masalah pada tabel anggota" };
@@ -190,7 +190,7 @@ export async function createPenduduk(formData: FormData) {
       name: validatedFields.data.nama,
       username: validatedFields.data.nik,
       password: password,
-      role: "Penduduk" as const,
+      role: "penduduk" as const,
     }
     await supabase.from("pengguna").insert(newUser)
 

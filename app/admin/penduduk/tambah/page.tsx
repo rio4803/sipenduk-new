@@ -13,6 +13,8 @@ import { DatePicker } from "@/components/ui/date-picker.tsx"
 import { FormField } from "@/components/ui/form-field"
 import { format } from "date-fns"
 import { getKKData, createPenduduk } from "../actions"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { InfoIcon } from "lucide-react"
 
 export default function TambahPendudukPage() {
   const router = useRouter()
@@ -185,7 +187,7 @@ export default function TambahPendudukPage() {
           <CardContent className="space-y-4">
             <FormStatus error={error} success={success} errors={validationErrors} />
 
-            {/* {userCredentials && (
+            {userCredentials && (
               <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 mb-4">
                 <InfoIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
                 <AlertTitle>Akun Pengguna Dibuat</AlertTitle>
@@ -204,7 +206,7 @@ export default function TambahPendudukPage() {
                   </p>
                 </AlertDescription>
               </Alert>
-            )} */}
+            )}
 
             {/* Dropdown Kepala Keluarga */}
             <FormField id="id_kk" label="Kepala Keluarga" required error={formErrors.id_kk}>
@@ -327,14 +329,24 @@ export default function TambahPendudukPage() {
           </CardContent>
 
           <CardFooter className="flex justify-between">
-            <Button variant="outline" asChild>
-              <Link href="/admin/penduduk">Batal</Link>
+          {success && userCredentials ? (
+            <Button asChild className="w-full">
+                <Link href="/admin/penduduk">Kembali ke Daftar Penduduk</Link>
             </Button>
+          ):(
+            <>
+              <Button variant="outline" asChild>
+                <Link href="/admin/penduduk">Batal</Link>
+              </Button>
 
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Menyimpan..." : "Simpan"}
-            </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Menyimpan..." : "Simpan"}
+              </Button>
+            </>
+          )}
           </CardFooter>
+
+            
         </form>
       </Card>
     </div>
