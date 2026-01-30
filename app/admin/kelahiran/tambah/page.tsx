@@ -27,7 +27,6 @@ export default function TambahKelahiranPage() {
   const [kartuKeluarga, setKartuKeluarga] = useState<any[]>([])
   const [isLoadingKK, setIsLoadingKK] = useState(true)
   const [birthDate, setBirthDate] = useState<Date | null>(null)
-  const [userCredentials, setUserCredentials] = useState<{ username: string; password: string } | null>(null)
 
   useEffect(() => {
     async function loadKartuKeluarga() {
@@ -47,7 +46,6 @@ export default function TambahKelahiranPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!user) return
-
     setIsPending(true)
     setError(null)
     setSuccess(null)
@@ -67,19 +65,9 @@ export default function TambahKelahiranPage() {
         setError(result.error)
       } else if (result.success) {
         setSuccess("Data kelahiran berhasil ditambahkan")
-        
-        // Simpan kredensial user jika ada
-        if (result.akun) {
-          setUserCredentials({
-            username: result.akun.username,
-            password: result.akun.password
-          })
-        }
-        
-        // Redirect setelah 5 detik (lebih lama untuk memberikan waktu baca kredensial)
         setTimeout(() => {
           router.push("/admin/kelahiran")
-        }, 5000)
+        }, 2000)
       }
     } catch (err) {
       setError("Terjadi kesalahan. Silakan coba lagi.")
@@ -108,7 +96,7 @@ export default function TambahKelahiranPage() {
           <CardContent className="space-y-4">
             <FormStatus error={error} success={success} errors={validationErrors} />
 
-            {userCredentials && (
+            {/* {userCredentials && (
               <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                 <h3 className="font-semibold text-green-800 dark:text-green-200 mb-2">
                   ✅ Akun Login Berhasil Dibuat
@@ -125,7 +113,7 @@ export default function TambahKelahiranPage() {
                   </p>
                 </div>
               </div>
-            )}
+            )} */}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 

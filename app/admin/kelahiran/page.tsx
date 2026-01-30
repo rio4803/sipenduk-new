@@ -9,7 +9,7 @@ import { useEffect, useState } from "react"
 import { getKelahiranData } from "./actions"
 
 export default function KelahiranPage() {
-  const [kelahiran, setKelahiran] = useState([])
+  const [kelahiran, setKelahiran] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -37,26 +37,26 @@ export default function KelahiranPage() {
       header: "Nama",
     },
     {
-      accessorKey: "tgl_lh",
+      accessorKey: "tanggal_lahir",
       header: "Tanggal Lahir",
-      cell: ({ row }) => <div>{formatDate(row.original.tgl_lh)}</div>,
+      cell: ({ row }: { row: any }) => <div>{formatDate(row.original.tanggal_lahir)}</div>,
     },
     {
-      accessorKey: "jekel",
+      accessorKey: "jenis_kelamin",
       header: "Jenis Kelamin",
-      cell: ({ row }) => <div>{row.original.jekel === "LK" ? "Laki-laki" : "Perempuan"}</div>,
+      cell: ({ row }: { row: any }) => <div>{row.original.jenis_kelamin === "LK" ? "Laki-laki" : "Perempuan"}</div>,
     },
     {
-      accessorKey: "keluarga",
+      accessorKey: "kepala",
       header: "Keluarga",
     },
     {
       id: "actions",
       header: "Aksi",
-      cell: ({ row }) => (
+      cell: ({ row }: { row: any }) => (
         <div className="flex gap-2">
           <Button asChild size="sm" variant="outline">
-            <Link href={`/admin/kelahiran/${row.original.id_lahir}`}>Detail</Link>
+            <Link href={`/admin/kelahiran/${row.original.id}`}>Detail</Link>
           </Button>
         </div>
       ),

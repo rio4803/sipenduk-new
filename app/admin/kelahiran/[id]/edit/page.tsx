@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import Link from "next/link"
 import { useRouter, notFound } from "next/navigation"
 import { getKelahiranById, updateKelahiran } from "../../actions"
@@ -15,8 +15,8 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { DatePicker } from "@/components/ui/date-picker.tsx"
 import { useAuth } from "@/lib/auth-context"
 
-export default function EditKelahiranPage({ params }: { params: { id: string } }) {
-  const id = Number.parseInt(params.id)
+export default function EditKelahiranPage({ params }: { params: Promise<{ id: string }> }) {
+  const {id} = use(params)
   const router = useRouter()
   const { user } = useAuth()
 
@@ -43,8 +43,8 @@ export default function EditKelahiranPage({ params }: { params: { id: string } }
         setKelahiran(kelahiranData)
         setKartuKeluarga(kkData)
 
-        if (kelahiranData.tgl_lh) {
-          setBirthDate(new Date(kelahiranData.tgl_lh))
+        if (kelahiranData.tanggal_lahir) {
+          setBirthDate(new Date(kelahiranData.tanggal_lahir))
         }
       } catch (err) {
         setError("Gagal memuat data")
@@ -68,7 +68,7 @@ export default function EditKelahiranPage({ params }: { params: { id: string } }
     const formData = new FormData(e.currentTarget)
 
     if (birthDate) {
-      formData.set("tgl_lh", birthDate.toISOString().split("T")[0])
+      formData.set("tanggal_lahir", birthDate.toISOString().split("T")[0])
     }
 
     try {
@@ -125,16 +125,16 @@ export default function EditKelahiranPage({ params }: { params: { id: string } }
 
               {/* TEMPAT LAHIR */}
               <div className="space-y-2">
-                <Label htmlFor="tempat_lh">Tempat Lahir</Label>
-                <Input id="tempat_lh" name="tempat_lh" defaultValue={kelahiran.tempat_lh || ""} />
+                <Label htmlFor="tempat_lahir">Tempat Lahir</Label>
+                <Input id="tempat_lahir" name="tempat_lahir" defaultValue={kelahiran.tempat_lahir || ""} />
               </div>
 
               {/* TANGGAL LAHIR */}
               <div className="space-y-2">
-                <Label htmlFor="tgl_lh">Tanggal Lahir</Label>
+                <Label htmlFor="tanggal_lahir">Tanggal Lahir</Label>
                 <DatePicker
-                  id="tgl_lh"
-                  name="tgl_lh"
+                  id="tanggal_lahir"
+                  name="tanggal_lahir"
                   selected={birthDate}
                   onSelect={setBirthDate}
                   required
@@ -143,8 +143,8 @@ export default function EditKelahiranPage({ params }: { params: { id: string } }
 
               {/* JENIS KELAMIN */}
               <div className="space-y-2">
-                <Label htmlFor="jekel">Jenis Kelamin</Label>
-                <Select name="jekel" defaultValue={kelahiran.jekel} required>
+                <Label htmlFor="jenis_kelamin">Jenis Kelamin</Label>
+                <Select name="jenis_kelamin" defaultValue={kelahiran.jenis_kelamin} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih jenis kelamin" />
                   </SelectTrigger>
@@ -158,13 +158,13 @@ export default function EditKelahiranPage({ params }: { params: { id: string } }
               {/* KARTU KELUARGA */}
               <div className="space-y-2">
                 <Label htmlFor="id_kk">Kartu Keluarga</Label>
-                <Select name="id_kk" defaultValue={kelahiran.id_kk.toString()} required>
+                <Select name="id_kk" defaultValue={kelahiran.id_kk} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih kartu keluarga" />
                   </SelectTrigger>
                   <SelectContent>
                     {kartuKeluarga.map((kk) => (
-                      <SelectItem key={kk.id_kk} value={kk.id_kk.toString()}>
+                      <SelectItem key={kk.id} value={kk.id}>
                         {kk.no_kk} - {kk.kepala}
                       </SelectItem>
                     ))}

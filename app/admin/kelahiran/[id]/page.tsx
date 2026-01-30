@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { use, useEffect, useState } from "react"
 import Link from "next/link"
 import { notFound, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -14,9 +14,9 @@ import { useAuth } from "@/lib/auth-context"
 export default function DetailKelahiranPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const id = Number.parseInt(params.id)
+  const {id} = use(params)
   const router = useRouter()
   const { user } = useAuth()
   const [kelahiran, setKelahiran] = useState<any>(null)
@@ -110,18 +110,18 @@ export default function DetailKelahiranPage({
 
               <div>
                 <p className="text-sm font-medium">Tempat Lahir</p>
-                <p className="text-lg">{kelahiran.tempat_lh || "-"}</p>
+                <p className="text-lg">{kelahiran.tempat_lahir || "-"}</p>
               </div>
 
               <div>
                 <p className="text-sm font-medium">Tanggal Lahir</p>
-                <p className="text-lg">{formatDate(kelahiran.tgl_lh)}</p>
+                <p className="text-lg">{formatDate(kelahiran.tanggal_lahir)}</p>
               </div>
 
               <div>
                 <p className="text-sm font-medium">Jenis Kelamin</p>
                 <p className="text-lg">
-                  {kelahiran.jekel === "LK" ? "Laki-laki" : "Perempuan"}
+                  {kelahiran.jenis_kelamin === "LK" ? "Laki-laki" : "Perempuan"}
                 </p>
               </div>
 
@@ -147,7 +147,7 @@ export default function DetailKelahiranPage({
 
               <div>
                 <p className="text-sm font-medium">Keluarga</p>
-                <p className="text-lg">{kelahiran.keluarga_nama}</p>
+                <p className="text-lg">{kelahiran.kepala}</p>
               </div>
 
             </div>
