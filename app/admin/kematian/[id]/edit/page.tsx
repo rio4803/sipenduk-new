@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import Link from "next/link"
 import { useRouter, notFound } from "next/navigation"
 import { getKematianById, updateKematian } from "../../actions"
@@ -13,15 +13,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { FormStatus } from "@/components/form-status"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { DatePicker } from "@/components/ui/date-picker.tsx"
+import { DatePicker } from "@/components/ui/date-picker"
 import { useAuth } from "@/lib/auth-context"
+import { getPendudukData } from "@/app/admin/penduduk/actions"
 
 export default function EditKematianPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const id = Number.parseInt(params.id)
+  const {id} = use(params)
   const router = useRouter()
   const { user } = useAuth()
   const [isPending, setIsPending] = useState(false)
@@ -44,19 +45,12 @@ export default function EditKematianPage({
         setKematian(kematianData)
 
         if (kematianData.tgl_mendu) {
-          setDeathDate(new Date(kematianData.tgl_mendu))
+          setDeathDate(new Date(kematianData.tanggal_kematian))
         }
 
-        // Load penduduk data
-        const response = await fetch("/api/penduduk")
-        if (response.ok) {
-          const pendudukData = await response.json()
-          // Include current penduduk even if status is not "Ada"
-          const filteredPenduduk = pendudukData.filter(
-            (p: any) => p.status === "Ada" || p.id_pend === kematianData.id_pdd,
-          )
-          setPenduduk(filteredPenduduk)
-        }
+        const pendudukData = await getPendudukData()
+        const filteredPenduduk = pendudukData.filter(penduduk => penduduk.status_penduduk == "Ada" || kematianData.id_penduduk)
+        setPenduduk(filteredPenduduk)
       } catch (error) {
         console.error("Error loading data:", error)
         setError("Gagal memuat data")
@@ -127,13 +121,13 @@ export default function EditKematianPage({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="id_pdd">Penduduk</Label>
-                <Select name="id_pdd" defaultValue={kematian.id_pdd.toString()} required>
+                <Select name="id_pdd" defaultValue={kematian.id_penduduk} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih penduduk" />
                   </SelectTrigger>
                   <SelectContent>
                     {penduduk.map((p) => (
-                      <SelectItem key={p.id_pend} value={p.id_pend.toString()}>
+                      <SelectItem key={p.id} value={p.id}>
                         {p.nama} - {p.nik}
                       </SelectItem>
                     ))}
@@ -143,12 +137,12 @@ export default function EditKematianPage({
 
               <div className="space-y-2">
                 <Label htmlFor="tgl_mendu">Tanggal Meninggal</Label>
-                <DatePicker id="tgl_mendu" name="tgl_mendu" selected={deathDate} onSelect={setDeathDate} required />
+                <DatePicker id="tgl_mendu" name="tgl_mendu" selected={deathDate} onSelect={setDeathDate} />
               </div>
 
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="sebab">Sebab</Label>
-                <Textarea id="sebab" name="sebab" rows={3} defaultValue={kematian.sebab} required />
+                <Textarea id="sebab" name="sebab" rows={3} defaultValue={kematian.sebab_kematian} required />
               </div>
             </div>
           </CardContent>

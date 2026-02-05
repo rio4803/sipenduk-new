@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FormStatus } from "@/components/form-status"
 import { getKartuKeluargaData } from "../../kartu-keluarga/actions"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { DatePicker } from "@/components/ui/date-picker.tsx"
+import { DatePicker } from "@/components/ui/date-picker"
 import { useAuth } from "@/lib/auth-context"
 
 export default function TambahKelahiranPage() {
@@ -141,7 +141,6 @@ export default function TambahKelahiranPage() {
                     name="tanggal_lahir"
                     selected={birthDate}
                     onSelect={setBirthDate}
-                    required
                     className="w-full"
                   />
                 </div>

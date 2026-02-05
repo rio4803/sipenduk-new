@@ -1,8 +1,8 @@
-import { getRedisData } from "./redis-service"
+import { supabase } from "@/app/utils/supabase"
 
-export async function validateUserExists(userId: number): Promise<boolean> {
+export async function validateUserExists(userId: string): Promise<boolean> {
   try {
-    const user = await getRedisData(`pengguna:${userId}`)
+    const {data: user, error} = await supabase.from("pengguna").select("*").eq("id", userId).single()
     return !!user
   } catch (error) {
     console.error("Error validating user:", error)
@@ -10,11 +10,11 @@ export async function validateUserExists(userId: number): Promise<boolean> {
   }
 }
 
-export async function validateUserRole(userId: number, requiredRole: "admin" | "guest"): Promise<boolean> {
+export async function validateUserRole(userId: string, requiredRole: "admin" | "penduduk"): Promise<boolean> {
   try {
-    const user = await getRedisData(`pengguna:${userId}`)
-    if (!user) return false
-    return user.level === requiredRole
+    const {data: user, error} = await supabase.from("pengguna").select("*").eq("id", userId).single()
+    if (!user || error) return false
+    return user.role === requiredRole
   } catch (error) {
     console.error("Error validating user role:", error)
     return false
@@ -23,7 +23,7 @@ export async function validateUserRole(userId: number, requiredRole: "admin" | "
 
 export async function validatePenduduk(nik: string): Promise<boolean> {
   try {
-    const penduduk = await getRedisData(`penduduk:${nik}`)
+    const {data: penduduk, error} = await supabase.from("penduduk").select("*").eq("nik", nik).single()
     return !!penduduk
   } catch (error) {
     console.error("Error validating penduduk:", error)

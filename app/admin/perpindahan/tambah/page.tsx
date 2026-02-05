@@ -14,8 +14,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { FormStatus } from "@/components/form-status"
 import { getPendudukData } from "../../penduduk/actions"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { DatePicker } from "@/components/ui/date-picker.tsx"
+import { DatePicker } from "@/components/ui/date-picker"
 import { FormField } from "@/components/ui/form-field"
+import { useAuth } from "@/lib/auth-context"
 
 export default function TambahPerpindahanPage() {
   const router = useRouter()
@@ -26,7 +27,7 @@ export default function TambahPerpindahanPage() {
   const [penduduk, setPenduduk] = useState<any[]>([])
   const [isLoadingPenduduk, setIsLoadingPenduduk] = useState(true)
   const [moveDate, setMoveDate] = useState<Date | null>(null)
-
+  const {user} = useAuth()
   // Form validation state
   const [formData, setFormData] = useState({
     id_pdd: "",
@@ -39,7 +40,7 @@ export default function TambahPerpindahanPage() {
     async function loadPenduduk() {
       try {
         const data = await getPendudukData()
-        setPenduduk(data.filter((p: any) => p.status === "Ada"))
+        setPenduduk(data.filter((p: any) => p.status_penduduk == "Ada"))
       } catch (error) {
         console.error("Error loading penduduk data:", error)
       } finally {
@@ -94,7 +95,7 @@ export default function TambahPerpindahanPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
 
-    if (!validateForm()) {
+    if (!validateForm() || !user) {
       return
     }
 
@@ -111,7 +112,7 @@ export default function TambahPerpindahanPage() {
     }
 
     try {
-      const result = await createPerpindahan(formDataObj)
+      const result = await createPerpindahan(formDataObj, user.id)
 
       if (result.error) {
         setError(result.error)
@@ -162,7 +163,7 @@ export default function TambahPerpindahanPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {penduduk.map((p) => (
-                      <SelectItem key={p.id_pend} value={p.id_pend.toString()}>
+                      <SelectItem key={p.id} value={p.id}>
                         {p.nama} - {p.nik}
                       </SelectItem>
                     ))}

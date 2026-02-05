@@ -1,11 +1,19 @@
 "use server"
 
-import { getRedisData, getRedisKeys, setRedisData, deleteRedisData } from "@/lib/redis-service"
-import { getKartuKeluargaById } from "@/lib/redis-helpers"
-import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { logActivity } from "@/lib/activity-logger"
 import { supabase } from "@/app/utils/supabase"
+
+
+// Schema validasi untuk kelahiran
+const kelahiranSchema = z.object({
+  nama: z.string().min(1, "Nama harus diisi"),
+  tanggal_lahir: z.string().min(1, "Tanggal lahir harus diisi"),
+  jenis_kelamin: z.enum(["LK", "PR"], {
+    error: () => ({ message: "Jenis kelamin harus dipilih" }),
+  }),
+  id_kk: z.string().min(1, "Kartu keluarga harus dipilih"),
+})
 
 // get data kelahiran
 // DONE
@@ -17,6 +25,7 @@ export async function getKelahiranData() {
       return []
     }
     const dataKelahiran = arrayKelahiran.map(kelahiran => ({...kelahiran.penduduk, ...kelahiran.kartu_keluarga, id: kelahiran.id}))
+    console.log(dataKelahiran);
     return dataKelahiran
   } catch (error) {
     console.error("Error fetching kelahiran data:", error)
@@ -34,7 +43,7 @@ export async function getKelahiranById(id: string) {
       return null
     }
 
-    const dataKelahiran = {...kelahiran.penduduk, ...kelahiran.kartu_keluarga, id: kelahiran.id, id_kk: kelahiran.id_kk}
+    const dataKelahiran = {...kelahiran.penduduk, ...kelahiran.kartu_keluarga,  id_kelahiran: kelahiran.id, id_kk: kelahiran.id_kk}
     return dataKelahiran
   } catch (error) {
     console.error(`Error getting kelahiran with id ${id}:`, error)
@@ -42,21 +51,13 @@ export async function getKelahiranById(id: string) {
   }
 }
 
-// Schema validasi untuk kelahiran
-const kelahiranSchema = z.object({
-  nama: z.string().min(1, "Nama harus diisi"),
-  tanggal_lahir: z.string().min(1, "Tanggal lahir harus diisi"),
-  jenis_kelamin: z.enum(["LK", "PR"], {
-    errorMap: () => ({ message: "Jenis kelamin harus dipilih" }),
-  }),
-  id_kk: z.string().min(1, "Kartu keluarga harus dipilih"),
-})
-
 // create kelahiran
 // DONE
-export async function createKelahiran(formData: FormData, userId: number) {
+export async function createKelahiran(formData: FormData, userId: string) {
   try {
     const id_kk = formData.get("id_kk")
+
+    // insert penduduk
     const newUserData = {
       nik: formData.get("nik") || null,
       nama: formData.get("nama") || null,
@@ -77,6 +78,7 @@ export async function createKelahiran(formData: FormData, userId: number) {
       return {error: "Terjadi masalah saat menambahkan penduduk"}
     }
     
+    // insert anggota
     const anggota = {
       id_penduduk: insertPenduduk.data.id,
       id_kk,
@@ -91,6 +93,7 @@ export async function createKelahiran(formData: FormData, userId: number) {
       return {error: "Terjadi masalah saat menambahkan anggota keluarga"}
     }
     
+    // insert kelahiran
     const kelahiran = {
       id_penduduk: insertPenduduk.data.id,
       id_kk
@@ -104,6 +107,14 @@ export async function createKelahiran(formData: FormData, userId: number) {
       return {error: "Terjadi masalah saat menambahkan data kelahiran"}
     }
 
+    // Log
+    await logActivity({
+      user_id: userId,
+      type: "Kelahiran",
+      description: `Menambah data kelahiran ${newUserData.nama}`,
+      entity_type: "kelahiran"
+    })
+
     return {success: "berhasil"}
   } catch (err) {
     console.error(err)
@@ -111,8 +122,9 @@ export async function createKelahiran(formData: FormData, userId: number) {
   }
 }
 
-
-export async function updateKelahiran(id: string, formData: FormData, userId: number) {
+// update kelahiran
+// DONE
+export async function updateKelahiran(id: string, formData: FormData, userId: string) {
   try {
     // VALIDASI WAJIB
     const validated = kelahiranSchema.safeParse({
@@ -129,77 +141,49 @@ export async function updateKelahiran(id: string, formData: FormData, userId: nu
       }
     }
 
+    const id_penduduk = formData.get("id_penduduk")
     const { id_kk } = validated.data
-
+    const old_id_kk = formData.get("old_id_kk")
     const newPenduduk = {
-      nama: validated.data.nama
-      tanggal_lahir: validated.data.tanggal_lahir
-      nama: validated.data.nama
-    }
-    const nik = formData.get("nik")?.toString()
-    const tempat_lahir = formData.get("tempat_lh")
-    const desa = formData.get("desa")?.toString()
-    const rt = formData.get("rt")?.toString()
-    const rw = formData.get("rw")?.toString()
-    const agama = formData.get("agama")?.toString()
-
-    const updatePenduduk = await supabase.from("penduduk").update({
-      
-    })
-
-    // =====================================
-    // UPDATE DATA KELAHIRAN
-    // =====================================
-    const updatedKelahiran = {
-      ...oldData,
-      nama,
-      tgl_lh,
-      jekel,
-      id_kk: Number(id_kk),
-
-      // field baru agar konsisten
-      nik,
-      tempat_lh,
-      desa,
-      rt,
-      rw,
-      agama,
+      nama: validated.data.nama,
+      tanggal_lahir: validated.data.tanggal_lahir,
+      jenis_kelamin: validated.data.jenis_kelamin,
+      nik: formData.get("nik"),
+      tempat_lahir: formData.get("tempat_lahir"),
+      desa: formData.get("desa"),
+      rt: formData.get("rt"),
+      rw: formData.get("rw"),
+      agama: formData.get("agama")
     }
 
-    await setRedisData(`kelahiran:${id}`, updatedKelahiran)
-
-    // =====================================
-    // UPDATE DATA ANGGOTA KELUARGA (PINDAH KK)
-    // =====================================
-    if (Number(id_kk) !== oldKK) {
-      // pindah KK → update anggota keluarga
-      const anggotaKeys = await getRedisKeys("anggota:*")
-      const anggotaList = await Promise.all(anggotaKeys.map(k => getRedisData(k)))
-
-      const anggota = anggotaList.find(a => a && a.id_pend === idPend)
-
-      if (anggota) {
-        const updatedAnggota = {
-          ...anggota,
-          id_kk: Number(id_kk),
-        }
-
-        await setRedisData(`anggota:${anggota.id_anggota}`, updatedAnggota)
+    const {error: errUpdatePenduduk} = await supabase.from("penduduk").update(newPenduduk).eq("id", id_penduduk)
+    const {error: errUpdateKelahiran} = await supabase.from("kelahiran").update({id_kk}).eq("id", id)
+    if(errUpdatePenduduk || errUpdateKelahiran){
+      errUpdatePenduduk && console.log(errUpdatePenduduk)
+      errUpdateKelahiran && console.log(errUpdateKelahiran)
+      return {error: "Terjadi masalah saat memperbarui data"}
+    }
+    
+    if(old_id_kk != id_kk){
+      const {error: errUpdateAnggota} = await supabase.from("anggota_kartu_keluarga").update({id_kk}).eq("id_penduduk", id_penduduk)
+      if(errUpdateAnggota){
+        console.log(errUpdateAnggota)
+        return {error: "Terjadi masalah saat memperbarui data"}
       }
     }
+
 
     // =====================================
     // LOG AKTIVITAS
     // =====================================
-    // await logActivity({
-    //   userId,
-    //   type: "Kelahiran",
-    //   description: `Memperbarui data kelahiran untuk ${nama}`,
-    //   entityId: id,
-    //   entityType: "kelahiran",
-    // })
+    await logActivity({
+      user_id: userId,
+      type: "Kelahiran",
+      description: `Memperbarui data kelahiran ${newPenduduk.nama}`,
+      entity_type: "kelahiran",
+    })
 
-    return { success: true, data: updatedKelahiran }
+    return { success: true }
 
   } catch (error) {
     console.error("Error updating kelahiran:", error)
@@ -207,27 +191,23 @@ export async function updateKelahiran(id: string, formData: FormData, userId: nu
   }
 }
 
-export async function deleteKelahiran(id: number, userId: number) {
+// hapus kelahiran
+// DONE
+export async function deleteKelahiran(id: string, user_id: string) {
   try {
-    // Periksa apakah kelahiran ada
-    const kelahiran = await getRedisData(`kelahiran:${id}`)
-    if (!kelahiran) {
-      return { error: "Data kelahiran tidak ditemukan" }
+    const {data, error} = await supabase.from("kelahiran").delete().eq("id", id).select("penduduk:id_penduduk (nama)").single()
+    if(error){
+      return { error: "Gagal menghapus data kelahiran" }
     }
-
-    // Hapus kelahiran
-    await deleteRedisData(`kelahiran:${id}`)
 
     // Log activity
     await logActivity({
-      userId,
+      user_id,
       type: "Kelahiran",
-      description: `Menghapus data kelahiran ${kelahiran.nama}`,
-      entityId: id,
-      entityType: "kelahiran",
+      description: `Menghapus data kelahiran ${data}`,
+      entity_type: "kelahiran",
     })
-
-    revalidatePath("/admin/kelahiran")
+    console.log(data)
     return { success: true }
   } catch (error) {
     console.error("Error deleting kelahiran:", error)

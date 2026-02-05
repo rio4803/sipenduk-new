@@ -1,52 +1,42 @@
 "use server"
 
-import { getRedisData, getRedisKeys, setRedisData, deleteRedisData } from "@/lib/redis-service"
-import { getPendudukById } from "@/lib/redis-helpers"
-import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { logActivity } from "@/lib/activity-logger"
+import { supabase } from "@/app/utils/supabase"
 
+// read kematian
+// DONE
 export async function getKematianData() {
   try {
-    // Ambil data kematian dari Redis
-    const keys = await getRedisKeys("kematian:*")
-    const kematianPromises = keys.map((key) => getRedisData(key))
-    const kematianList = await Promise.all(kematianPromises)
-
-    // Tambahkan informasi penduduk
-    const kematianWithPenduduk = await Promise.all(
-      kematianList.map(async (k) => {
-        if (!k) return null
-
-        const penduduk = await getPendudukById(k.id_pdd)
-        return {
-          ...k,
-          penduduk: penduduk ? penduduk.nama : "-",
-        }
-      }),
-    )
-    return kematianWithPenduduk.filter(Boolean)
+    const {data: dataKematian, error} = await supabase.from("kematian").select("*, penduduk:id_penduduk (*)")
+    if(error){
+      console.log(error);
+      return []
+    }
+    const kematian = dataKematian.map(k => {
+      const newObject = {...k.penduduk, ...k, id_penduduk: k.penduduk.id }
+      delete newObject.penduduk
+      return newObject
+    })
+    return kematian
   } catch (error) {
     console.error("Error fetching kematian data:", error)
     throw new Error("Gagal mengambil data kematian")
   }
 }
 
-export async function getKematianById(id: number) {
+// read kematian by id
+// DONE
+export async function getKematianById(id: string) {
   try {
-    const kematian = await getRedisData(`kematian:${id}`)
-
-    if (!kematian) {
+    const {data: dataKematian, error} = await supabase.from("kematian").select("*, penduduk:id_penduduk(*)").eq("id", id).single()
+    if (error) {
+      console.log(error)
       return null
     }
-
-    const penduduk = await getPendudukById(kematian.id_pdd)
-
-    return {
-      ...kematian,
-      penduduk_nama: penduduk ? penduduk.nama : "-",
-      penduduk: penduduk,
-    }
+    const kematian = {...dataKematian.penduduk, ...dataKematian, id_penduduk: dataKematian.penduduk.id}
+    delete kematian.penduduk
+    return kematian
   } catch (error) {
     console.error(`Error getting kematian with id ${id}:`, error)
     throw new Error("Gagal mengambil data kematian")
@@ -55,18 +45,20 @@ export async function getKematianById(id: number) {
 
 // Schema validasi untuk kematian
 const kematianSchema = z.object({
-  id_pdd: z.string().min(1, "Penduduk harus dipilih"),
-  tgl_mendu: z.string().min(1, "Tanggal meninggal harus diisi"),
-  sebab: z.string().min(1, "Sebab harus diisi"),
+  id_penduduk: z.string().min(1, "Penduduk harus dipilih"),
+  tanggal_kematian: z.string().min(1, "Tanggal meninggal harus diisi"),
+  sebab_kematian: z.string().min(1, "Sebab harus diisi"),
 })
 
-export async function createKematian(formData: FormData, userId: number) {
+// create kematian
+// DONE
+export async function createKematian(formData: FormData, userId: string) {
   try {
     // Validasi input
     const validatedFields = kematianSchema.safeParse({
-      id_pdd: formData.get("id_pdd"),
-      tgl_mendu: formData.get("tgl_mendu"),
-      sebab: formData.get("sebab"),
+      id_penduduk: formData.get("id_pdd"),
+      tanggal_kematian: formData.get("tgl_mendu"),
+      sebab_kematian: formData.get("sebab"),
     })
 
     if (!validatedFields.success) {
@@ -76,70 +68,36 @@ export async function createKematian(formData: FormData, userId: number) {
       }
     }
 
-    // Periksa apakah penduduk ada
-    const penduduk = await getPendudukById(Number.parseInt(validatedFields.data.id_pdd))
-    if (!penduduk) {
-      return { error: "Penduduk tidak ditemukan" }
+    const {error: errInsertKematian} = await supabase.from("kematian").insert({...validatedFields.data})
+    const {error: errUpdateStatusPenduduk} = await supabase.from("penduduk").update({status_penduduk: "Meninggal"}).eq("id", validatedFields.data.id_penduduk)
+    if(errInsertKematian || errUpdateStatusPenduduk){
+      return {error: "terjadi masalah"}
     }
-
-    // Periksa apakah penduduk sudah meninggal
-    if (penduduk.status === "Meninggal") {
-      return { error: "Penduduk sudah tercatat meninggal" }
-    }
-
-    // Periksa apakah penduduk sudah pindah
-    if (penduduk.status === "Pindah") {
-      return { error: "Penduduk sudah tercatat pindah" }
-    }
-
-    // Dapatkan ID baru
-    const keys = await getRedisKeys("kematian:*")
-    const kematianPromises = keys.map((key) => getRedisData(key))
-    const kematianList = await Promise.all(kematianPromises)
-    const kematianIds = kematianList.map((k) => (k ? k.id_mendu : 0))
-    const newId = kematianIds.length > 0 ? Math.max(...kematianIds) + 1 : 1
-
-    const newKematian = {
-      id_mendu: newId,
-      id_pdd: Number.parseInt(validatedFields.data.id_pdd),
-      tgl_mendu: validatedFields.data.tgl_mendu,
-      sebab: validatedFields.data.sebab,
-    }
-
-    // Simpan ke Redis
-    await setRedisData(`kematian:${newId}`, newKematian)
-
-    // Update status penduduk menjadi "Meninggal"
-    await setRedisData(`penduduk:${penduduk.id_pend}`, {
-      ...penduduk,
-      status: "Meninggal",
-    })
 
     // Log activity
     await logActivity({
-      userId,
+      user_id: userId,
       type: "Kematian",
-      description: `Menambahkan data kematian untuk ${penduduk.nama}`,
-      entityId: newId,
-      entityType: "kematian",
+      description: `Menambahkan data kematian untuk ${formData.get("nama")}`,
+      entity_type: "kematian",
     })
 
-    revalidatePath("/admin/kematian")
-    revalidatePath("/admin/penduduk")
-    return { success: true, data: newKematian }
+    return { success: true }
   } catch (error) {
     console.error("Error creating kematian:", error)
     return { error: "Gagal menambahkan data kematian" }
   }
 }
 
-export async function updateKematian(id: number, formData: FormData, userId: number) {
+// update kematian
+// DONE
+export async function updateKematian(id: string, formData: FormData, userId: string) {
   try {
     // Validasi input
     const validatedFields = kematianSchema.safeParse({
-      id_pdd: formData.get("id_pdd"),
-      tgl_mendu: formData.get("tgl_mendu"),
-      sebab: formData.get("sebab"),
+      id_penduduk: formData.get("id_pdd"),
+      tanggal_kematian: formData.get("tgl_mendu"),
+      sebab_kematian: formData.get("sebab"),
     })
 
     if (!validatedFields.success) {
@@ -149,95 +107,52 @@ export async function updateKematian(id: number, formData: FormData, userId: num
       }
     }
 
-    // Periksa apakah kematian ada
-    const kematian = await getRedisData(`kematian:${id}`)
-    if (!kematian) {
-      return { error: "Data kematian tidak ditemukan" }
+    const {data: nama, error} = await supabase.from("kematian").update({...validatedFields.data}).eq("id", id).select("penduduk:id_penduduk (nama)").single()
+    if(error){
+      console.log(error);
+      return {error: "terjadi masalah saat memperbarui data"}
     }
-
-    // Periksa apakah penduduk ada
-    const penduduk = await getPendudukById(Number.parseInt(validatedFields.data.id_pdd))
-    if (!penduduk) {
-      return { error: "Penduduk tidak ditemukan" }
-    }
-
-    // Jika penduduk berubah, kembalikan status penduduk lama dan update status penduduk baru
-    if (kematian.id_pdd !== Number.parseInt(validatedFields.data.id_pdd)) {
-      // Kembalikan status penduduk lama menjadi "Ada"
-      const oldPenduduk = await getPendudukById(kematian.id_pdd)
-      if (oldPenduduk && oldPenduduk.status === "Meninggal") {
-        await setRedisData(`penduduk:${oldPenduduk.id_pend}`, {
-          ...oldPenduduk,
-          status: "Ada",
-        })
-      }
-
-      // Update status penduduk baru menjadi "Meninggal"
-      await setRedisData(`penduduk:${penduduk.id_pend}`, {
-        ...penduduk,
-        status: "Meninggal",
-      })
-    }
-
-    // Update kematian
-    const updatedKematian = {
-      ...kematian,
-      id_pdd: Number.parseInt(validatedFields.data.id_pdd),
-      tgl_mendu: validatedFields.data.tgl_mendu,
-      sebab: validatedFields.data.sebab,
-    }
-
-    await setRedisData(`kematian:${id}`, updatedKematian)
-
+    
     // Log activity
     await logActivity({
-      userId,
+      user_id: userId,
       type: "Kematian",
-      description: `Memperbarui data kematian untuk ${penduduk.nama}`,
-      entityId: id,
-      entityType: "kematian",
+      description: `Memperbarui data kematian untuk ${nama}`,
+      entity_type: "kematian",
     })
 
-    revalidatePath("/admin/kematian")
-    revalidatePath("/admin/penduduk")
-    return { success: true, data: updatedKematian }
+    return { success: true}
   } catch (error) {
     console.error("Error updating kematian:", error)
     return { error: "Gagal memperbarui data kematian" }
   }
 }
 
-export async function deleteKematian(id: number, userId: number) {
+// delete kematian
+// DONE
+export async function deleteKematian(id: string, userId: string) {
   try {
-    // Periksa apakah kematian ada
-    const kematian = await getRedisData(`kematian:${id}`)
-    if (!kematian) {
-      return { error: "Data kematian tidak ditemukan" }
+    
+    const {data: get_id_penduduk, error: errDeleteKematian} = await supabase.from("kematian").delete().eq("id", id).select("id_penduduk").single()
+    if(errDeleteKematian){
+      console.log(errDeleteKematian);
+      return {error: "Terjadi masalah"}
     }
-
-    // Kembalikan status penduduk menjadi "Ada"
-    const penduduk = await getPendudukById(kematian.id_pdd)
-    if (penduduk && penduduk.status === "Meninggal") {
-      await setRedisData(`penduduk:${penduduk.id_pend}`, {
-        ...penduduk,
-        status: "Ada",
-      })
+    
+    const {data: nama, error: errUpdatePenduduk} = await supabase.from("penduduk").update({status_penduduk: "Ada"}).eq("id", get_id_penduduk.id_penduduk)
+    if(errUpdatePenduduk){
+      console.log(errUpdatePenduduk);
+      return {error: "Terjadi masalah"}
     }
-
-    // Hapus kematian
-    await deleteRedisData(`kematian:${id}`)
 
     // Log activity
     await logActivity({
-      userId,
+      user_id: userId,
       type: "Kematian",
-      description: `Menghapus data kematian ${penduduk ? `untuk ${penduduk.nama}` : ""}`,
-      entityId: id,
-      entityType: "kematian",
+      description: `Menghapus data kematian ${nama ? `untuk ${nama}` : ""}`,
+      entity_type: "kematian",
     })
 
-    revalidatePath("/admin/kematian")
-    revalidatePath("/admin/penduduk")
     return { success: true }
   } catch (error) {
     console.error("Error deleting kematian:", error)

@@ -3,8 +3,6 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { CustomCursor } from "@/components/custom-cursor"
-import { ParticlesBackground } from "@/components/particles-background"
 import { AuthProvider } from "@/lib/auth-context"
 import { Toaster } from "@/components/ui/sonner"
 import './globals.css'
@@ -53,9 +51,9 @@ export const metadata: Metadata = {
     description: appDescription,
   },
   icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/icon.png",
+    icon: "/icons/icon-192.png",
+    shortcut: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
   },
   manifest: "/manifest.json",
   verification: {

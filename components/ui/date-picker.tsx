@@ -36,7 +36,7 @@ const getLocale = async (localeCode: string) => {
 interface DatePickerProps {
   id?: string
   selected?: Date | null
-  onSelect?: (date: Date | undefined) => void
+  onSelect?: (date: Date | null) => void
   disabled?: boolean
   placeholder?: string
   className?: string

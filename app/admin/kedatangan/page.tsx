@@ -10,7 +10,7 @@ import { getKedatanganData } from "./actions"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 export default function KedatanganPage() {
-  const [kedatangan, setKedatangan] = useState([])
+  const [kedatangan, setKedatangan] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -34,30 +34,30 @@ export default function KedatanganPage() {
       header: "NIK",
     },
     {
-      accessorKey: "nama_datang",
+      accessorKey: "nama_pendatang",
       header: "Nama",
     },
     {
-      accessorKey: "jekel",
+      accessorKey: "jenis_kelamin",
       header: "Jenis Kelamin",
-      cell: ({ row }) => <div>{row.original.jekel === "LK" ? "Laki-laki" : "Perempuan"}</div>,
+      cell: ({ row }: { row: any }) => <div>{row.original.jenis_kelamin == "LK" ? "Laki-laki" : "Perempuan"}</div>,
     },
     {
-      accessorKey: "tgl_datang",
+      accessorKey: "tanggal_kedatangan",
       header: "Tanggal Datang",
-      cell: ({ row }) => <div>{formatDate(row.original.tgl_datang)}</div>,
+      cell: ({ row }: { row: any }) => <div>{formatDate(row.original.tanggal_kedatangan)}</div>,
     },
     {
-      accessorKey: "pelapor_nama",
+      accessorKey: "nama_pelapor",
       header: "Pelapor",
     },
     {
       id: "actions",
       header: "Aksi",
-      cell: ({ row }) => (
+      cell: ({ row }: { row: any }) => (
         <div className="flex gap-2">
           <Button asChild size="sm" variant="outline">
-            <Link href={`/admin/kedatangan/${row.original.id_datang}`}>Detail</Link>
+            <Link href={`/admin/kedatangan/${row.original.id}`}>Detail</Link>
           </Button>
         </div>
       ),
@@ -93,7 +93,7 @@ export default function KedatanganPage() {
       <DataTableWrapper
         columns={columns}
         data={kedatangan}
-        searchColumn="nama_datang"
+        searchColumn="nama_pendatang"
         searchPlaceholder="Cari berdasarkan nama..."
       />
     </div>

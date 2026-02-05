@@ -10,7 +10,7 @@ import { getPerpindahanData } from "./actions"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 export default function PerpindahanPage() {
-  const [perpindahan, setPerpindahan] = useState([])
+  const [perpindahan, setPerpindahan] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -30,13 +30,13 @@ export default function PerpindahanPage() {
 
   const columns = [
     {
-      accessorKey: "penduduk_nama",
+      accessorKey: "nama_penduduk",
       header: "Nama Penduduk",
     },
     {
-      accessorKey: "tgl_pindah",
+      accessorKey: "tanggal_pindah",
       header: "Tanggal Pindah",
-      cell: ({ row }) => <div>{formatDate(row.original.tgl_pindah)}</div>,
+      cell: ({ row }: { row: any }) => <div>{formatDate(row.original.tanggal_pindah)}</div>,
     },
     {
       accessorKey: "alasan",
@@ -45,10 +45,10 @@ export default function PerpindahanPage() {
     {
       id: "actions",
       header: "Aksi",
-      cell: ({ row }) => (
+      cell: ({ row }: { row: any }) => (
         <div className="flex gap-2">
           <Button asChild size="sm" variant="outline">
-            <Link href={`/admin/perpindahan/${row.original.id_pindah}`}>Detail</Link>
+            <Link href={`/admin/perpindahan/${row.original.id}`}>Detail</Link>
           </Button>
         </div>
       ),
@@ -84,7 +84,7 @@ export default function PerpindahanPage() {
       <DataTableWrapper
         columns={columns}
         data={perpindahan}
-        searchColumn="penduduk_nama"
+        searchColumn="nama_penduduk"
         searchPlaceholder="Cari berdasarkan nama penduduk..."
       />
     </div>

@@ -79,17 +79,17 @@ export function ActivityFeed({ adminView = false }: ActivityFeedProps) {
         <div className="space-y-4">
           {activities.length > 0 ? (
             activities.map((activity) => (
-              <div key={activity.timestamp} className="flex items-start border-b pb-4 last:border-0 last:pb-0">
+              <div key={activity.created_at} className="flex items-start border-b pb-4 last:border-0 last:pb-0">
                 <div className="space-y-1">
                   <p className="text-sm font-medium leading-none">
                     {activity.type}
-                    {adminView && activity.userName && (
-                      <span className="ml-2 text-xs text-muted-foreground">oleh {activity.userName}</span>
+                    {adminView && activity.username && (
+                      <span className="ml-2 text-xs text-muted-foreground">oleh {activity.username}</span>
                     )}
                   </p>
                   <p className="text-sm text-muted-foreground">{activity.description}</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(activity.timestamp), {
+                    {formatDistanceToNow(new Date(activity.created_at), {
                       addSuffix: true,
                       locale: id,
                     })}

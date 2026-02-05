@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import Link from "next/link"
 import { useRouter, notFound } from "next/navigation"
 import { getKedatanganById, updateKedatangan } from "../../actions"
@@ -13,15 +13,16 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FormStatus } from "@/components/form-status"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { DatePicker } from "@/components/ui/date-picker.tsx"
+import { DatePicker } from "@/components/ui/date-picker"
 import { useAuth } from "@/lib/auth-context"
+import { getPendudukData } from "@/app/admin/penduduk/actions"
 
 export default function EditKedatanganPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const id = Number.parseInt(params.id)
+  const {id} = use(params)
   const router = useRouter()
   const { user } = useAuth()
   const [isPending, setIsPending] = useState(false)
@@ -43,16 +44,13 @@ export default function EditKedatanganPage({
         }
         setKedatangan(kedatanganData)
 
-        if (kedatanganData.tgl_datang) {
-          setArrivalDate(new Date(kedatanganData.tgl_datang))
+        if (kedatanganData.tanggal_kedatangan) {
+          setArrivalDate(new Date(kedatanganData.tanggal_kedatangan))
         }
 
         // Load penduduk data
-        const response = await fetch("/api/penduduk")
-        if (response.ok) {
-          const pendudukData = await response.json()
-          setPenduduk(pendudukData.filter((p: any) => p.status === "Ada"))
-        }
+        const pendudukData = await getPendudukData()
+        setPenduduk(pendudukData.filter((p: any) => p.status_penduduk == "Ada"))
       } catch (error) {
         console.error("Error loading data:", error)
         setError("Gagal memuat data")
@@ -74,7 +72,6 @@ export default function EditKedatanganPage({
     setValidationErrors(null)
 
     const formData = new FormData(e.currentTarget)
-
     // Add the date from the DatePicker component
     if (arrivalDate) {
       formData.set("tgl_datang", arrivalDate.toISOString().split("T")[0])
@@ -128,12 +125,12 @@ export default function EditKedatanganPage({
 
               <div className="space-y-2">
                 <Label htmlFor="nama_datang">Nama Lengkap</Label>
-                <Input id="nama_datang" name="nama_datang" defaultValue={kedatangan.nama_datang} required />
+                <Input id="nama_datang" name="nama_datang" defaultValue={kedatangan.nama_pendatang} required />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="jekel">Jenis Kelamin</Label>
-                <Select name="jekel" defaultValue={kedatangan.jekel} required>
+                <Select name="jekel" defaultValue={kedatangan.jenis_kelamin} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih jenis kelamin" />
                   </SelectTrigger>
@@ -151,19 +148,18 @@ export default function EditKedatanganPage({
                   name="tgl_datang"
                   selected={arrivalDate}
                   onSelect={setArrivalDate}
-                  required
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="pelapor">Pelapor</Label>
-                <Select name="pelapor" defaultValue={kedatangan.pelapor.toString()} required>
+                <Select name="pelapor" defaultValue={kedatangan.id_pelapor} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih pelapor" />
                   </SelectTrigger>
                   <SelectContent>
                     {penduduk.map((p) => (
-                      <SelectItem key={p.id_pend} value={p.id_pend.toString()}>
+                      <SelectItem key={p.id} value={p.id}>
                         {p.nama}
                       </SelectItem>
                     ))}

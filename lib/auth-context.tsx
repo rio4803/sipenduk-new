@@ -4,10 +4,10 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import { useRouter, usePathname } from "next/navigation"
 
 export type User = {
-  id: number
+  id: string
   name: string
   username: string
-  role: "admin" | "guest"
+  role: "admin" | "penduduk"
 }
 
 type AuthContextType = {

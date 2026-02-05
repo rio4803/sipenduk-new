@@ -9,7 +9,7 @@ import { useEffect, useState } from "react"
 import { getKematianData } from "./actions"
 
 export default function KematianPage() {
-  const [kematian, setKematian] = useState([])
+  const [kematian, setKematian] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -29,25 +29,25 @@ export default function KematianPage() {
 
   const columns = [
     {
-      accessorKey: "penduduk",
+      accessorKey: "nama",
       header: "Penduduk",
     },
     {
-      accessorKey: "tgl_mendu",
+      accessorKey: "tanggal_kematian",
       header: "Tanggal Meninggal",
-      cell: ({ row }) => <div>{formatDate(row.original.tgl_mendu)}</div>,
+      cell: ({ row }: {row:any}) => <div>{formatDate(row.original.tanggal_kematian)}</div>,
     },
     {
-      accessorKey: "sebab",
+      accessorKey: "sebab_kematian",
       header: "Sebab",
     },
     {
       id: "actions",
       header: "Aksi",
-      cell: ({ row }) => (
+      cell: ({ row }: {row:any}) => (
         <div className="flex gap-2">
           <Button asChild size="sm" variant="outline">
-            <Link href={`/admin/kematian/${row.original.id_mendu}`}>Detail</Link>
+            <Link href={`/admin/kematian/${row.original.id}`}>Detail</Link>
           </Button>
         </div>
       ),
@@ -75,7 +75,7 @@ export default function KematianPage() {
       <DataTableWrapper
         columns={columns}
         data={kematian}
-        searchColumn="penduduk"
+        searchColumn="nama"
         searchPlaceholder="Cari berdasarkan nama penduduk..."
       />
     </div>

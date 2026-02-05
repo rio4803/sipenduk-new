@@ -4,49 +4,45 @@ import { getRedisData, getRedisKeys, setRedisData, deleteRedisData } from "@/lib
 import { getPendudukById } from "@/lib/redis-helpers"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { supabase } from "@/app/utils/supabase"
+import { logActivity } from "@/lib/activity-logger"
 
+// read
+// DONE
 export async function getPerpindahanData() {
   try {
-    // Ambil data perpindahan dari Redis
-    const keys = await getRedisKeys("perpindahan:*")
-    const perpindahanPromises = keys.map((key) => getRedisData(key))
-    const perpindahanList = await Promise.all(perpindahanPromises)
+    const {data: perpindahan, error: errPerpindahan} = await supabase.from("perpindahan").select("*, penduduk:id_penduduk (nama)")
+    if(errPerpindahan){
+      console.log(errPerpindahan)
+      return []
+    }
 
-    // Tambahkan informasi penduduk
-    const perpindahanWithPenduduk = await Promise.all(
-      perpindahanList.map(async (p) => {
-        if (!p) return null
+    const perpindahanWithPenduduk = perpindahan.map(pindah => {
+      const newObj = {...pindah, nama_penduduk: pindah.penduduk.nama}
+      delete newObj.penduduk
+      return newObj
+    })
 
-        const penduduk = await getPendudukById(p.id_pdd)
-        return {
-          ...p,
-          penduduk_nama: penduduk ? penduduk.nama : "-",
-        }
-      }),
-    )
-
-    return perpindahanWithPenduduk.filter(Boolean)
+    return perpindahanWithPenduduk
   } catch (error) {
     console.error("Error fetching perpindahan data:", error)
     throw new Error("Gagal mengambil data perpindahan")
   }
 }
 
-export async function getPerpindahanById(id: number) {
+// read by id
+// DONE
+export async function getPerpindahanById(id: string) {
   try {
-    const perpindahan = await getRedisData(`perpindahan:${id}`)
-
-    if (!perpindahan) {
+    const {data: perpindahan, error} = await supabase.from("perpindahan").select("*, penduduk:id_penduduk (nama, nik)").eq("id", id).single()
+    if(error){
+      console.log(error)
       return null
     }
 
-    const penduduk = await getPendudukById(perpindahan.id_pdd)
-
-    return {
-      ...perpindahan,
-      penduduk_nama: penduduk ? penduduk.nama : "-",
-      penduduk: penduduk,
-    }
+    const perpindahanPenduduk = {...perpindahan, ...perpindahan.penduduk}
+    delete perpindahanPenduduk.penduduk
+    return perpindahanPenduduk
   } catch (error) {
     console.error(`Error getting perpindahan with id ${id}:`, error)
     throw new Error("Gagal mengambil data perpindahan")
@@ -55,17 +51,19 @@ export async function getPerpindahanById(id: number) {
 
 // Schema validasi untuk perpindahan
 const perpindahanSchema = z.object({
-  id_pdd: z.string().min(1, "Penduduk harus dipilih"),
-  tgl_pindah: z.string().min(1, "Tanggal pindah harus diisi"),
+  id_penduduk: z.string().min(1, "Penduduk harus dipilih"),
+  tanggal_pindah: z.string().min(1, "Tanggal pindah harus diisi"),
   alasan: z.string().min(1, "Alasan harus diisi"),
 })
 
-export async function createPerpindahan(formData: FormData) {
+// create
+// DONE
+export async function createPerpindahan(formData: FormData, user_id: string) {
   try {
     // Validasi input
     const validatedFields = perpindahanSchema.safeParse({
-      id_pdd: formData.get("id_pdd"),
-      tgl_pindah: formData.get("tgl_pindah"),
+      id_penduduk: formData.get("id_pdd"),
+      tanggal_pindah: formData.get("tgl_pindah"),
       alasan: formData.get("alasan"),
     })
 
@@ -76,47 +74,43 @@ export async function createPerpindahan(formData: FormData) {
       }
     }
 
-    // Periksa apakah penduduk ada
-    const penduduk = await getPendudukById(Number.parseInt(validatedFields.data.id_pdd))
-    if (!penduduk) {
-      return { error: "Penduduk tidak ditemukan" }
-    }
-
-    // Periksa apakah penduduk sudah pindah
-    if (penduduk.status === "Pindah") {
-      return { error: "Penduduk sudah tercatat pindah" }
-    }
-
-    // Periksa apakah penduduk sudah meninggal
-    if (penduduk.status === "Meninggal") {
-      return { error: "Penduduk sudah tercatat meninggal" }
-    }
-
-    // Dapatkan ID baru
-    const keys = await getRedisKeys("perpindahan:*")
-    const perpindahanPromises = keys.map((key) => getRedisData(key))
-    const perpindahanList = await Promise.all(perpindahanPromises)
-    const perpindahanIds = perpindahanList.map((p) => (p ? p.id_pindah : 0))
-    const newId = perpindahanIds.length > 0 ? Math.max(...perpindahanIds) + 1 : 1
-
     const newPerpindahan = {
-      id_pindah: newId,
-      id_pdd: Number.parseInt(validatedFields.data.id_pdd),
-      tgl_pindah: validatedFields.data.tgl_pindah,
+      id_penduduk: validatedFields.data.id_penduduk,
+      tanggal_pindah: validatedFields.data.tanggal_pindah,
       alasan: validatedFields.data.alasan,
     }
 
-    // Simpan ke Redis
-    await setRedisData(`perpindahan:${newId}`, newPerpindahan)
+    const {error: errPindah} = await supabase.from("perpindahan").insert(newPerpindahan)
+    if(errPindah){
+      console.log(errPindah)
+      return {error: "Terjadi masalah saat menambahkan data perpindahan"}
+    }
+    
+    const {data: penduduk,error: errPenduduk} = await supabase.from("penduduk").update({status_penduduk: "Pindah"}).eq("id", validatedFields.data.id_penduduk).select("nama").single()
+    if(errPenduduk){
+      console.log(errPenduduk)
+      return {error: "Terjadi masalah saat memperbarui data penduduk"}
+    }
+    
+    const {error: errPengguna} = await supabase.from("pengguna").delete().eq("id_penduduk", validatedFields.data.id_penduduk)
+    if(errPengguna){
+      console.log(errPengguna)
+      return {error: "Terjadi masalah saat memperbarui data pengguna"}
+    }
+    
+    const {error: errAnggota} = await supabase.from("anggota_kartu_keluarga").delete().eq("id_penduduk", validatedFields.data.id_penduduk)
+    if(errAnggota){
+      console.log(errAnggota)
+    }
 
-    // Update status penduduk menjadi "Pindah"
-    await setRedisData(`penduduk:${penduduk.id_pend}`, {
-      ...penduduk,
-      status: "Pindah",
+    // log
+    await logActivity({
+      user_id,
+      type: "Perpindahan",
+      entity_type: "perpindahan",
+      description: `Menambahkan data perpindahan untuk ${penduduk.nama}`
     })
 
-    revalidatePath("/admin/perpindahan")
-    revalidatePath("/admin/penduduk")
     return { success: true, data: newPerpindahan }
   } catch (error) {
     console.error("Error creating perpindahan:", error)
@@ -124,12 +118,12 @@ export async function createPerpindahan(formData: FormData) {
   }
 }
 
-export async function updatePerpindahan(id: number, formData: FormData) {
+export async function updatePerpindahan(id: string, formData: FormData, user_id: string) {
   try {
     // Validasi input
     const validatedFields = perpindahanSchema.safeParse({
-      id_pdd: formData.get("id_pdd"),
-      tgl_pindah: formData.get("tgl_pindah"),
+      id_penduduk: formData.get("id_pdd"),
+      tanggal_pindah: formData.get("tgl_pindah"),
       alasan: formData.get("alasan"),
     })
 
@@ -140,77 +134,49 @@ export async function updatePerpindahan(id: number, formData: FormData) {
       }
     }
 
-    // Periksa apakah perpindahan ada
-    const perpindahan = await getRedisData(`perpindahan:${id}`)
-    if (!perpindahan) {
-      return { error: "Data perpindahan tidak ditemukan" }
+    const {data: perpindahan, error} = await supabase.from("perpindahan").update(validatedFields.data).eq("id", id).select("penduduk:id_penduduk(nama)").single()
+    if(error){
+      console.log(error)
+      return {error: "Terjadi masalah saat memperbarui data perpindahan"}
     }
 
-    // Periksa apakah penduduk ada
-    const penduduk = await getPendudukById(Number.parseInt(validatedFields.data.id_pdd))
-    if (!penduduk) {
-      return { error: "Penduduk tidak ditemukan" }
-    }
+    // log
+    await logActivity({
+      user_id,
+      type: "Perpindahan",
+      entity_type: "perpindahan",
+      description: `Memperbarui data perpindahan untuk ${perpindahan.penduduk?.[0]?.nama}`
+    })
 
-    // Jika penduduk berubah, kembalikan status penduduk lama dan update status penduduk baru
-    if (perpindahan.id_pdd !== Number.parseInt(validatedFields.data.id_pdd)) {
-      // Kembalikan status penduduk lama menjadi "Ada"
-      const oldPenduduk = await getPendudukById(perpindahan.id_pdd)
-      if (oldPenduduk && oldPenduduk.status === "Pindah") {
-        await setRedisData(`penduduk:${oldPenduduk.id_pend}`, {
-          ...oldPenduduk,
-          status: "Ada",
-        })
-      }
-
-      // Update status penduduk baru menjadi "Pindah"
-      await setRedisData(`penduduk:${penduduk.id_pend}`, {
-        ...penduduk,
-        status: "Pindah",
-      })
-    }
-
-    // Update perpindahan
-    const updatedPerpindahan = {
-      ...perpindahan,
-      id_pdd: Number.parseInt(validatedFields.data.id_pdd),
-      tgl_pindah: validatedFields.data.tgl_pindah,
-      alasan: validatedFields.data.alasan,
-    }
-
-    await setRedisData(`perpindahan:${id}`, updatedPerpindahan)
-
-    revalidatePath("/admin/perpindahan")
-    revalidatePath("/admin/penduduk")
-    return { success: true, data: updatedPerpindahan }
+    return { success: true }
   } catch (error) {
     console.error("Error updating perpindahan:", error)
     return { error: "Gagal memperbarui data perpindahan" }
   }
 }
 
-export async function deletePerpindahan(id: number) {
+export async function deletePerpindahan(id: string, user_id: string) {
   try {
-    // Periksa apakah perpindahan ada
-    const perpindahan = await getRedisData(`perpindahan:${id}`)
-    if (!perpindahan) {
-      return { error: "Data perpindahan tidak ditemukan" }
+    const {data: pindah, error: errPindah} = await supabase.from("perpindahan").delete().eq("id", id).select("id_penduduk").single()
+    if(errPindah){
+      console.log(errPindah)
+      return {error: "Terjadi masalah saat menghapus data perpindahan"}
     }
-
-    // Kembalikan status penduduk menjadi "Ada"
-    const penduduk = await getPendudukById(perpindahan.id_pdd)
-    if (penduduk && penduduk.status === "Pindah") {
-      await setRedisData(`penduduk:${penduduk.id_pend}`, {
-        ...penduduk,
-        status: "Ada",
-      })
+    
+    const {data: penduduk, error: errPenduduk} = await supabase.from("penduduk").update({status_penduduk:  "Ada"}).eq("id", pindah.id_penduduk).select("nama").single()
+    if(errPenduduk){
+      console.log(errPenduduk)
+      return {error: "Terjadi masalah saat memperbarui data penduduk"}
     }
+    
+    // log
+    await logActivity({
+      user_id,
+      type: "Perpindahan",
+      entity_type: "perpindahan",
+      description: `Menghapus data perpindahan untuk ${penduduk.nama}`
+    })
 
-    // Hapus perpindahan
-    await deleteRedisData(`perpindahan:${id}`)
-
-    revalidatePath("/admin/perpindahan")
-    revalidatePath("/admin/penduduk")
     return { success: true }
   } catch (error) {
     console.error("Error deleting perpindahan:", error)

@@ -172,7 +172,6 @@ export default function TambahKartuKeluargaPage() {
                     name="tgl_lh_kepala"
                     selected={birthDate}
                     onSelect={setBirthDate}
-                    required
                   />
                 </div>
 

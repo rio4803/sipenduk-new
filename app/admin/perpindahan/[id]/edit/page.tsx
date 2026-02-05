@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import Link from "next/link"
 import { useRouter, notFound } from "next/navigation"
 import { getPerpindahanById, updatePerpindahan } from "../../actions"
@@ -13,15 +13,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { FormStatus } from "@/components/form-status"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { DatePicker } from "@/components/ui/date-picker.tsx"
+import { DatePicker } from "@/components/ui/date-picker"
 import { useAuth } from "@/lib/auth-context"
+import { getPendudukData } from "@/app/admin/penduduk/actions"
 
 export default function EditPerpindahanPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const id = Number.parseInt(params.id)
+  const {id} = use(params)
   const router = useRouter()
   const { user } = useAuth()
   const [isPending, setIsPending] = useState(false)
@@ -33,30 +34,25 @@ export default function EditPerpindahanPage({
   const [isLoading, setIsLoading] = useState(true)
   const [moveDate, setMoveDate] = useState<Date | null>(null)
 
+  // moveDate && alert(moveDate.toISOString().split("T")[0])
   useEffect(() => {
     async function loadData() {
       try {
-        // Load perpindahan data
         const perpindahanData = await getPerpindahanById(id)
         if (!perpindahanData) {
           notFound()
         }
         setPerpindahan(perpindahanData)
 
-        if (perpindahanData.tgl_pindah) {
-          setMoveDate(new Date(perpindahanData.tgl_pindah))
+        if (perpindahanData.tanggal_pindah) {
+          setMoveDate((perpindahanData.tangga_pindah))
         }
 
-        // Load penduduk data
-        const response = await fetch("/api/penduduk")
-        if (response.ok) {
-          const pendudukData = await response.json()
-          // Include current penduduk even if status is not "Ada"
-          const filteredPenduduk = pendudukData.filter(
-            (p: any) => p.status === "Ada" || p.id_pend === perpindahanData.id_pdd,
-          )
-          setPenduduk(filteredPenduduk)
-        }
+        const pendudukData = await getPendudukData()
+        const filteredPenduduk = pendudukData.filter(
+          (p: any) => p.id === perpindahanData.id_penduduk,
+        )
+        setPenduduk(filteredPenduduk)
       } catch (error) {
         console.error("Error loading data:", error)
         setError("Gagal memuat data")
@@ -71,16 +67,16 @@ export default function EditPerpindahanPage({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!user) return
-
+    
     setIsPending(true)
     setError(null)
     setSuccess(null)
     setValidationErrors(null)
-
+    
     const formData = new FormData(e.currentTarget)
-
-    // Add the date from the DatePicker component
+    
     if (moveDate) {
+      moveDate.setHours(12, 0, 0, 0)
       formData.set("tgl_pindah", moveDate.toISOString().split("T")[0])
     }
 
@@ -127,13 +123,13 @@ export default function EditPerpindahanPage({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="id_pdd">Penduduk</Label>
-                <Select name="id_pdd" defaultValue={perpindahan.id_pdd.toString()} required>
+                <Select name="id_pdd" defaultValue={perpindahan.id_penduduk} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih penduduk" />
                   </SelectTrigger>
                   <SelectContent>
                     {penduduk.map((p) => (
-                      <SelectItem key={p.id_pend} value={p.id_pend.toString()}>
+                      <SelectItem key={p.id} value={p.id}>
                         {p.nama} - {p.nik}
                       </SelectItem>
                     ))}
@@ -143,7 +139,7 @@ export default function EditPerpindahanPage({
 
               <div className="space-y-2">
                 <Label htmlFor="tgl_pindah">Tanggal Pindah</Label>
-                <DatePicker id="tgl_pindah" name="tgl_pindah" selected={moveDate} onSelect={setMoveDate} required />
+                <DatePicker id="tgl_pindah" name="tgl_pindah" selected={moveDate} onSelect={setMoveDate} />
               </div>
 
               <div className="space-y-2 md:col-span-2">

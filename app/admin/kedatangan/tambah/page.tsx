@@ -15,6 +15,8 @@ import { getPendudukData } from "../../penduduk/actions"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { DatePicker } from "@/components/ui/date-picker"
 import { FormField } from "@/components/ui/form-field"
+import { getKartuKeluargaData } from "../../kartu-keluarga/actions"
+import { useAuth } from "@/lib/auth-context"
 
 export default function TambahKedatanganPage() {
   const router = useRouter()
@@ -27,12 +29,12 @@ export default function TambahKedatanganPage() {
   const [arrivalDate, setArrivalDate] = useState<Date | null>(null)
   const [kartuKeluarga, setKartuKeluarga] = useState<any[]>([])
   const [userCredentials, setUserCredentials] = useState<{ username: string; password: string } | null>(null)
-
+  const { user }= useAuth()
   // Form validation state
   const [formData, setFormData] = useState({
     nik: "",
-    nama_datang: "",
-    jekel: "",
+    nama: "",
+    jenis_kelamin: "",
     pelapor: "",
     id_kk: "", // Opsional untuk menambahkan ke KK
   })
@@ -43,7 +45,7 @@ export default function TambahKedatanganPage() {
     async function loadPenduduk() {
       try {
         const data = await getPendudukData()
-        setPenduduk(data.filter((p: any) => p.status === "Ada"))
+        setPenduduk(data.filter((p: any) => p.status_penduduk == "Ada"))
       } catch (error) {
         console.error("Error loading penduduk data:", error)
       } finally {
@@ -53,9 +55,8 @@ export default function TambahKedatanganPage() {
 
     async function loadKartuKeluarga() {
       try {
-        const response = await fetch(`${window.location.origin}/api/kk-list`)
-        const result = await response.json()
-        setKartuKeluarga(result)
+        const kkData = await getKartuKeluargaData()
+        setKartuKeluarga(kkData)
       } catch (error) {
         console.error("Error loading kartu keluarga data:", error)
       }
@@ -101,9 +102,9 @@ export default function TambahKedatanganPage() {
     if (!formData.nik) errors.nik = "NIK wajib diisi"
     else if (!/^\d{16}$/.test(formData.nik)) errors.nik = "NIK harus 16 digit angka"
 
-    if (!formData.nama_datang) errors.nama_datang = "Nama lengkap wajib diisi"
-    if (!formData.jekel) errors.jekel = "Jenis kelamin wajib diisi"
-    if (!arrivalDate) errors.tgl_datang = "Tanggal datang wajib diisi"
+    if (!formData.nama) errors.nama = "Nama lengkap wajib diisi"
+    if (!formData.jenis_kelamin) errors.jenis_kelamin = "Jenis kelamin wajib diisi"
+    if (!arrivalDate) errors.tanggal_kedatangan = "Tanggal datang wajib diisi"
     if (!formData.pelapor) errors.pelapor = "Pelapor wajib diisi"
 
     setFormErrors(errors)
@@ -112,10 +113,7 @@ export default function TambahKedatanganPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-
-    if (!validateForm()) {
-      return
-    }
+    if(!user || !validateForm()) return
 
     setIsPending(true)
     setError(null)
@@ -126,11 +124,11 @@ export default function TambahKedatanganPage() {
 
     // Add the date from the DatePicker component
     if (arrivalDate) {
-      formDataObj.set("tgl_datang", arrivalDate.toISOString().split("T")[0])
+      formDataObj.set("tanggal_kedatangan", arrivalDate.toISOString().split("T")[0])
     }
 
     try {
-      const result = await createKedatangan(formDataObj)
+      const result = await createKedatangan(formDataObj, user.id)
 
       if (result.error) {
         setError(result.error)
@@ -145,11 +143,6 @@ export default function TambahKedatanganPage() {
             password: result.akun.password
           })
         }
-        
-        // Redirect setelah 5 detik (lebih lama untuk memberikan waktu baca kredensial)
-        setTimeout(() => {
-          router.push("/admin/kedatangan")
-        }, 5000)
       }
     } catch (err) {
       setError("Terjadi kesalahan. Silakan coba lagi.")
@@ -206,30 +199,27 @@ export default function TambahKedatanganPage() {
                   inputMode="numeric"
                   pattern="\d{16}"
                   maxLength={16}
-                  value={formData.nik}
                   onChange={handleInputChange}
                   className={formErrors.nik ? "border-red-500" : ""}
                 />
               </FormField>
 
-              <FormField id="nama_datang" label="Nama Lengkap" required error={formErrors.nama_datang}>
+              <FormField id="nama" label="Nama Lengkap" required error={formErrors.nama}>
                 <Input
-                  id="nama_datang"
-                  name="nama_datang"
+                  id="nama"
+                  name="nama"
                   type="text"
-                  value={formData.nama_datang}
                   onChange={handleInputChange}
-                  className={formErrors.nama_datang ? "border-red-500" : ""}
+                  className={formErrors.nama ? "border-red-500" : ""}
                 />
               </FormField>
 
-              <FormField id="jekel" label="Jenis Kelamin" required error={formErrors.jekel}>
+              <FormField id="jenis_kelamin" label="Jenis Kelamin" required error={formErrors.jenis_kelamin}>
                 <Select
-                  name="jekel"
-                  value={formData.jekel}
-                  onValueChange={(value) => handleSelectChange("jekel", value)}
+                  name="jenis_kelamin"
+                  onValueChange={(value) => handleSelectChange("jenis_kelamin", value)}
                 >
-                  <SelectTrigger className={formErrors.jekel ? "border-red-500" : ""}>
+                  <SelectTrigger className={formErrors.jenis_kelamin ? "border-red-500" : ""}>
                     <SelectValue placeholder="Pilih jenis kelamin" />
                   </SelectTrigger>
                   <SelectContent>
@@ -239,20 +229,19 @@ export default function TambahKedatanganPage() {
                 </Select>
               </FormField>
 
-              <FormField id="tgl_datang" label="Tanggal Datang" required error={formErrors.tgl_datang}>
+              <FormField id="tanggal_kedatangan" label="Tanggal Datang" required error={formErrors.tanggal_kedatangan}>
                 <DatePicker
-                  id="tgl_datang"
-                  name="tgl_datang"
+                  id="tanggal_kedatangan"
+                  name="tanggal_kedatangan"
                   selected={arrivalDate}
                   onSelect={setArrivalDate}
-                  error={formErrors.tgl_datang}
+                  // error={formErrors.tanggal_kedatangan}
                 />
               </FormField>
 
               <FormField id="pelapor" label="Pelapor" required error={formErrors.pelapor}>
                 <Select
                   name="pelapor"
-                  value={formData.pelapor}
                   onValueChange={(value) => handleSelectChange("pelapor", value)}
                 >
                   <SelectTrigger className={formErrors.pelapor ? "border-red-500" : ""}>
@@ -260,7 +249,7 @@ export default function TambahKedatanganPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {penduduk.map((p) => (
-                      <SelectItem key={p.id_pend} value={p.id_pend.toString()}>
+                      <SelectItem key={p.id} value={p.id}>
                         {p.nama}
                       </SelectItem>
                     ))}
@@ -271,7 +260,6 @@ export default function TambahKedatanganPage() {
               <FormField id="id_kk" label="Kepala Keluarga (Opsional)" error={formErrors.id_kk}>
                 <Select
                   name="id_kk"
-                  value={formData.id_kk || ""}
                   onValueChange={(value) => handleSelectChange("id_kk", value)}
                 >
                   <SelectTrigger className={formErrors.id_kk ? "border-red-500" : ""}>
@@ -279,7 +267,7 @@ export default function TambahKedatanganPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {kartuKeluarga.map((kk: any) => (
-                      <SelectItem key={kk.id_kk} value={kk.id_kk.toString()}>
+                      <SelectItem key={kk.id} value={kk.id}>
                         {kk.no_kk} - {kk.kepala}
                       </SelectItem>
                     ))}
@@ -289,12 +277,20 @@ export default function TambahKedatanganPage() {
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
-            <Button variant="outline" asChild>
-              <Link href="/admin/kedatangan">Batal</Link>
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Menyimpan..." : "Simpan"}
-            </Button>
+            {success ? (
+              <Button asChild className="w-full">
+                <Link href="/admin/kedatangan">Kembali ke Daftar Pendatang</Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" asChild>
+                  <Link href="/admin/kedatangan">Batal</Link>
+                </Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? "Menyimpan..." : "Simpan"}
+                </Button>
+              </>
+            )}
           </CardFooter>
         </form>
       </Card>

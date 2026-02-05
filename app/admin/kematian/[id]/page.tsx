@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { use, useEffect, useState } from "react"
 import Link from "next/link"
 import { notFound, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -14,9 +14,9 @@ import { useAuth } from "@/lib/auth-context"
 export default function DetailKematianPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const id = Number.parseInt(params.id)
+  const {id} = use(params)
   const router = useRouter()
   const { user } = useAuth()
   const [kematian, setKematian] = useState<any>(null)
@@ -99,19 +99,19 @@ export default function DetailKematianPage({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm font-medium">Nama Penduduk</p>
-                <p className="text-lg">{kematian.penduduk_nama}</p>
+                <p className="text-lg">{kematian.nama}</p>
               </div>
               <div>
                 <p className="text-sm font-medium">NIK</p>
-                <p className="text-lg">{kematian.penduduk?.nik || "-"}</p>
+                <p className="text-lg">{kematian.nik || "-"}</p>
               </div>
               <div>
                 <p className="text-sm font-medium">Tanggal Meninggal</p>
-                <p className="text-lg">{formatDate(kematian.tgl_mendu)}</p>
+                <p className="text-lg">{formatDate(kematian.tanggal_kematian)}</p>
               </div>
               <div>
                 <p className="text-sm font-medium">Sebab</p>
-                <p className="text-lg">{kematian.sebab}</p>
+                <p className="text-lg">{kematian.sebab_kematian}</p>
               </div>
             </div>
           </CardContent>

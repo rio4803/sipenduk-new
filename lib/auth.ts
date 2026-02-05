@@ -1,5 +1,4 @@
 import { supabase } from "@/app/utils/supabase"
-import { getRedisData, getRedisKeys, setRedisData } from "./redis-service"
 import { generateRandomPassword } from "./utils"
 
 export type User = {
@@ -9,9 +8,7 @@ export type User = {
   role: string
 }
 
-export type UserWithPassword = User & {
-  password: string
-}
+export type UserWithPassword = User & {password: string}
 
 export async function checkAdminExists(): Promise<boolean> {
   if (typeof window !== "undefined") {
@@ -20,9 +17,7 @@ export async function checkAdminExists(): Promise<boolean> {
 
   try {
     const {data, error} = await supabase.from("pengguna").select("id").eq("role", "admin")
-    if(!error && data.length){
-      return true
-    }
+    if(!error && data.length){return true}
     return false
   } catch (error) {
     console.error("Error checking admin exists:", error)
@@ -67,7 +62,6 @@ export async function login(username: string, password: string): Promise<User | 
 
   try {
     console.log("Login attempt for username:", username)
-
     const {data: user, error} = await supabase
       .from("pengguna")
       .select("*")
@@ -81,7 +75,6 @@ export async function login(username: string, password: string): Promise<User | 
     }
 
     console.log("User found:", user.username, "with role:", user.level)
-
     const userObj: User = {
       id: user.id,
       name: user.name,

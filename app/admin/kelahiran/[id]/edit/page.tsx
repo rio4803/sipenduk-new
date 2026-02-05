@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FormStatus } from "@/components/form-status"
 import { getKartuKeluargaData } from "../../../kartu-keluarga/actions"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { DatePicker } from "@/components/ui/date-picker.tsx"
+import { DatePicker } from "@/components/ui/date-picker"
 import { useAuth } from "@/lib/auth-context"
 
 export default function EditKelahiranPage({ params }: { params: Promise<{ id: string }> }) {
@@ -66,10 +66,9 @@ export default function EditKelahiranPage({ params }: { params: Promise<{ id: st
     setValidationErrors(null)
 
     const formData = new FormData(e.currentTarget)
-
-    if (birthDate) {
-      formData.set("tanggal_lahir", birthDate.toISOString().split("T")[0])
-    }
+    formData.set("old_id_kk", kelahiran.id_kk)
+    formData.set("id_penduduk", kelahiran.id)
+    birthDate && formData.set("tanggal_lahir", birthDate.toISOString().split("T")[0])
 
     try {
       const result = await updateKelahiran(id, formData, user.id)
@@ -137,7 +136,6 @@ export default function EditKelahiranPage({ params }: { params: Promise<{ id: st
                   name="tanggal_lahir"
                   selected={birthDate}
                   onSelect={setBirthDate}
-                  required
                 />
               </div>
 

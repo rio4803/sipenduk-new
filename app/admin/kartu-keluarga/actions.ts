@@ -138,13 +138,14 @@ export async function createKartuKeluarga(formData: FormData) {
       pekerjaan: pekerjaan_kepala || "-",
       status_penduduk: "Ada" as const,
     }
-    const insertPenduduk = await supabase.from("penduduk").insert(newPenduduk)
+    const {data: penduduk, error: errPenduduk} = await supabase.from("penduduk").insert(newPenduduk).select("nama").single()
 
     // BUAT AKUN PENGGUNA OTOMATIS
     const newUser = {
       username: newPenduduk.nik,
       password: generateRandomPassword(),
       role: "penduduk",
+      name: newPenduduk.nama
     }
     const insertNewUser = await supabase.from("pengguna").insert(newUser)
 

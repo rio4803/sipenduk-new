@@ -31,7 +31,8 @@ export default function TambahKematianPage() {
     async function loadPenduduk() {
       try {
         const data = await getPendudukData()
-        setPenduduk(data.filter((p: any) => p.status === "Ada"))
+        const filteredData = data.filter(penduduk => penduduk.status_penduduk == "Ada")
+        setPenduduk(filteredData)
       } catch (error) {
         console.error("Error loading penduduk data:", error)
       } finally {
@@ -52,7 +53,8 @@ export default function TambahKematianPage() {
     setValidationErrors(null)
 
     const formData = new FormData(e.currentTarget)
-
+    const namaPenduduk = penduduk.find(p => p.id == formData.get("id_pdd"))?.nama
+    formData.set("nama", namaPenduduk)
     try {
       const result = await createKematian(formData, user.id)
 
@@ -102,7 +104,7 @@ export default function TambahKematianPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {penduduk.map((p) => (
-                      <SelectItem key={p.id_pend} value={p.id_pend.toString()}>
+                      <SelectItem key={p.id} value={p.id}>
                         {p.nama} - {p.nik}
                       </SelectItem>
                     ))}
