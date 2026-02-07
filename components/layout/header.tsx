@@ -50,7 +50,8 @@ export function Header() {
           serviceWorkerRegistration: registration,
         });
   
-        await subscribeToPush(user.id, token)      
+        await subscribeToPush(user.id, token)
+        toast.success("Notifikasi diaktifkan")
       }
 
       return 
@@ -126,7 +127,6 @@ export function Header() {
   //            const permission = await Notification.requestPermission()
   //            if (permission === 'granted') {
   //              await subscribeToPush(user?.id.toString())
-  //              toast.success("Notifikasi diaktifkan")
   //            }
   //          } catch (err) {
   //            console.error("Error auto-subscribing:", err)
