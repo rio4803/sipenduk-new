@@ -4,6 +4,7 @@ import { getRedisData, getRedisKeys, setRedisData, deleteRedisData } from "@/lib
 import { revalidatePath } from "next/cache"
 import { sendPushNotificationToAll } from "@/lib/push-notification-server"
 import { supabase } from "@/app/utils/supabase"
+import { logActivity } from "@/lib/activity-logger"
 
 export interface Pengumuman {
   id_pengumuman: number
@@ -17,13 +18,18 @@ export interface Pengumuman {
 // Get all pengumuman
 export async function getPengumumanData() {
   try {
-    const keys = await getRedisKeys("pengumuman:*")
-    const pengumumanPromises = keys.map((key) => getRedisData(key))
-    const pengumumanList = await Promise.all(pengumumanPromises)
+    const {data, error} = await supabase.from("pengumuman").select("*, pengguna:penulis(username)").order("created_at", {ascending: true})
+    if(error){
+      console.log(error)
+      return []
+    }
+    const pengumuman = data.map(p => {
+      const newObj = {...p, username: p.pengguna.username}
+      delete newObj.pengguna
+      return newObj
+    })
+    return pengumuman
 
-    return pengumumanList
-      .filter(Boolean)
-      .sort((a: any, b: any) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime())
   } catch (error) {
     console.error("Error fetching pengumuman data:", error)
     return []
@@ -64,17 +70,17 @@ export async function createPengumuman(formData: FormData, userId: string, userN
       return {error: "Terjadi kesalahan saat membuat pengumuman baru"}
     }
 
-    // // Send push notification
-    // try {
-    //   await sendPushNotificationToAll({
-    //     title: `Pengumuman Baru: ${judul}`,
-    //     body: isi.length > 50 ? `${isi.substring(0, 50)}...` : isi,
-    //     data: { url: "/dashboard/notifikasi" } // Redirect to notification/dashboard page
-    //   })
-    // } catch (pushError) {
-    //   console.error("Failed to send push notification:", pushError)
-    //   // Don't fail the request if push fails, just log it
-    // }
+    // Send push notification
+    try {
+      await sendPushNotificationToAll({
+        title: `Pengumuman Baru: ${judul}`,
+        body: isi.length > 50 ? `${isi.substring(0, 50)}...` : isi,
+        data: { url: "/dashboard/notifikasi" } // Redirect to notification/dashboard page
+      })
+    } catch (pushError) {
+      console.error("Failed to send push notification:", pushError)
+      return {error: "Something wen't wrong"}
+    }
 
     return { success: true }
   } catch (error) {
@@ -116,17 +122,14 @@ export async function updatePengumuman(id: number, formData: FormData) {
 }
 
 // Delete pengumuman
-export async function deletePengumuman(id: number) {
+export async function deletePengumuman(id: string) {
   try {
-    const pengumuman = await getRedisData(`pengumuman:${id}`)
-
-    if (!pengumuman) {
-      return { error: "Pengumuman tidak ditemukan" }
+    const {error} = await supabase.from("pengumuman").delete().eq("id", id)
+    if(error){
+      console.log(error)
+      return {error: "Terjadi masalah saat menghapus pengumuman"}
     }
 
-    await deleteRedisData(`pengumuman:${id}`)
-
-    revalidatePath("/admin/pengumuman")
     return { success: true }
   } catch (error) {
     console.error("Error deleting pengumuman:", error)

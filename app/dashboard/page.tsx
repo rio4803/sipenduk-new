@@ -33,7 +33,7 @@ export default function DashboardPage() {
       if (!user) return
 
       try {
-        const response = await fetch(`/api/dashboard/keluarga?username=${user.username}`)
+        const response = await fetch(`/api/dashboard/keluarga/detail?userId=${user.id}`)
 
         if (!response.ok) {
            // Allow 404 or other errors to be handled gracefully
@@ -93,7 +93,7 @@ export default function DashboardPage() {
     }
 
     if (mounted) {
-        fetchData()
+      fetchData()
     }
   }, [user, mounted])
 
@@ -181,12 +181,12 @@ export default function DashboardPage() {
   const genderData = [
     {
       name: "Laki-laki",
-      value: anggotaKeluarga.filter((a) => a.penduduk?.jekel === "LK").length,
+      value: anggotaKeluarga.filter((a) => a.jenis_kelamin == "LK").length,
       color: "#3b82f6",
     },
     {
       name: "Perempuan",
-      value: anggotaKeluarga.filter((a) => a.penduduk?.jekel === "PR").length,
+      value: anggotaKeluarga.filter((a) => a.jenis_kelamin == "PR").length,
       color: "#ec4899",
     },
   ]
@@ -201,8 +201,8 @@ export default function DashboardPage() {
   }
 
   anggotaKeluarga.forEach((a) => {
-    if (a.penduduk?.tgl_lh) {
-        const age = getAge(a.penduduk.tgl_lh)
+    if (a.tanggal_lahir) {
+        const age = getAge(a.tanggal_lahir)
         if (age <= 10) ageGroups["0-10"]++
         else if (age <= 20) ageGroups["11-20"]++
         else if (age <= 30) ageGroups["21-30"]++
@@ -287,7 +287,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Activity Feed */}
-        <ActivityFeed />
+        {/* <ActivityFeed /> */}
       </div>
 
       <div id="kk-data" className="space-y-6">
@@ -315,7 +315,7 @@ export default function DashboardPage() {
               <div>
                 <p className="text-sm font-medium">Kecamatan/Kabupaten/Provinsi</p>
                 <p className="text-lg">
-                  {kkData.kec}, {kkData.kab}, {kkData.prov}
+                  {kkData.kecamatan}, {kkData.kabupaten}, {kkData.provinsi}
                 </p>
               </div>
             </div>
@@ -371,8 +371,7 @@ export default function DashboardPage() {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
-                      label={({ name, percent }) => (percent > 0 ? `${name}: ${(percent || 0 * 100).toFixed(0)}%` : "")}
-                    >
+                      label={({ name, percent }) => !percent || percent <= 0 ? "" : `${name}: ${(percent * 100).toFixed(0)}%`}>
                       {ageData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
@@ -406,15 +405,15 @@ export default function DashboardPage() {
                 </thead>
                 <tbody>
                   {anggotaKeluarga.map((anggota) => (
-                    <tr key={anggota.id_anggota} className="border-b">
-                      <td className="py-2 px-4">{anggota.penduduk?.nik || "-"}</td>
-                      <td className="py-2 px-4">{anggota.penduduk?.nama || "-"}</td>
-                      <td className="py-2 px-4">{anggota.penduduk?.jekel === "LK" ? "Laki-laki" : "Perempuan"}</td>
+                    <tr key={anggota.id} className="border-b">
+                      <td className="py-2 px-4">{anggota.nik || "-"}</td>
+                      <td className="py-2 px-4">{anggota.nama || "-"}</td>
+                      <td className="py-2 px-4">{anggota.jenis_kelamin === "LK" ? "Laki-laki" : "Perempuan"}</td>
                       <td className="py-2 px-4">
-                        {anggota.penduduk?.tempat_lh}, {anggota.penduduk?.tgl_lh ? formatDate(anggota.penduduk.tgl_lh) : "-"}
+                        {anggota.tempat_lahir}, {anggota.tanggal_lahir ? formatDate(anggota.tanggal_lahir) : "-"}
                       </td>
                       <td className="py-2 px-4">{anggota.hubungan}</td>
-                      <td className="py-2 px-4">{anggota.penduduk?.status || "-"}</td>
+                      <td className="py-2 px-4">{anggota.status_penduduk || "-"}</td>
                     </tr>
                   ))}
                 </tbody>

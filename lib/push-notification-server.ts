@@ -23,22 +23,6 @@ interface PushNotificationPayload {
 
 export async function sendPushNotificationToAll(payload: PushNotificationPayload) {
     try {
-        // Check if VAPID keys are configured
-        if (!vapidPublicKey || !vapidPrivateKey) {
-            console.error("VAPID keys not configured")
-            return { success: false, error: "VAPID keys not configured" }
-        }
-
-        // Get all subscriptions
-        const keys = await getRedisKeys("push_subscription:*")
-        const subscriptionPromises = keys.map((key) => getRedisData(key))
-        const subscriptions = await Promise.all(subscriptionPromises)
-        const validSubscriptions = subscriptions.filter(Boolean)
-
-        if (validSubscriptions.length === 0) {
-            return { success: true, sent: 0, message: "No subscriptions found" }
-        }
-
         // Notification payload
         const notificationPayload = JSON.stringify({
             title: payload.title,
@@ -48,27 +32,19 @@ export async function sendPushNotificationToAll(payload: PushNotificationPayload
             data: payload.data || { url: "/dashboard/notifikasi" },
         })
 
-        // Send notifications to all subscribers
-        let sentCount = 0
-        let failedCount = 0
-
-        const sendPromises = validSubscriptions.map(async (sub: any) => {
-            try {
-                await webpush.sendNotification(sub.subscription, notificationPayload)
-                sentCount++
-            } catch (error) {
-                console.error("Error sending to subscription:", error)
-                failedCount++
-            }
+        const request = await fetch("/api/notification/send", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: notificationPayload,
         })
+        const response = await request.json()
 
-        await Promise.all(sendPromises)
-
-        return {
-            success: true,
-            sent: sentCount,
-            failed: failedCount
+        if(response.success){
+            return {success: true}
         }
+        return {error: "terjadi masalah saat mengirim notifikasi"}
     } catch (error) {
         console.error("Error sending push notifications:", error)
         return { success: false, error }

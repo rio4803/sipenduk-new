@@ -21,7 +21,7 @@ export default function KeluargaPage() {
       if (!user) return
 
       try {
-        const response = await fetch(`/api/dashboard/keluarga/detail?username=${user.username}`)
+        const response = await fetch(`/api/dashboard/keluarga/detail?userId=${user.id}`)
 
         if (!response.ok) {
           throw new Error("Failed to fetch data")
@@ -32,14 +32,14 @@ export default function KeluargaPage() {
 
         // --- Sorting urutan keluarga ---
         const order = {
-          "Suami": 1,
-          "Istri": 2,
-          "Anak": 3,
+          Suami: 1,
+          Istri: 2,
+          Anak: 3,
         }
 
         const sortedAnggota = [...data.anggotaKeluarga].sort((a, b) => {
-          const orderA = order[a.hubungan] || 99
-          const orderB = order[b.hubungan] || 99
+          const orderA = order[a.hubungan as keyof typeof order] || 99
+          const orderB = order[b.hubungan as keyof typeof order] || 99
           return orderA - orderB
         })
 
@@ -114,18 +114,18 @@ export default function KeluargaPage() {
                     </thead>
                     <tbody>
                       {anggotaKeluarga.map((anggota) => (
-                        <tr key={anggota.id_anggota} className="border-b">
-                          <td className="py-2 px-4">{anggota.penduduk.nik}</td>
-                          <td className="py-2 px-4">{anggota.penduduk.nama}</td>
-                          <td className="py-2 px-4">{anggota.penduduk.jekel === "LK" ? "Laki-laki" : "Perempuan"}</td>
+                        <tr key={anggota.id} className="border-b">
+                          <td className="py-2 px-4">{anggota.nik}</td>
+                          <td className="py-2 px-4">{anggota.nama}</td>
+                          <td className="py-2 px-4">{anggota.jenis_kelamin === "LK" ? "Laki-laki" : "Perempuan"}</td>
                           <td className="py-2 px-4">
-                            {anggota.penduduk.tempat_lh}, {formatDate(anggota.penduduk.tgl_lh)}
+                            {anggota.tempat_lahir}, {formatDate(anggota.tanggal_lahir)}
                           </td>
                           <td className="py-2 px-4">{anggota.hubungan}</td>
-                          <td className="py-2 px-4">{anggota.penduduk.agama}</td>
+                          <td className="py-2 px-4">{anggota.agama}</td>
                           <td className="py-2 px-4">-</td>
-                          <td className="py-2 px-4">{anggota.penduduk.pekerjaan}</td>
-                          <td className="py-2 px-4">{anggota.penduduk.status}</td>
+                          <td className="py-2 px-4">{anggota.pekerjaan}</td>
+                          <td className="py-2 px-4">{anggota.status_penduduk}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -142,7 +142,7 @@ export default function KeluargaPage() {
                 <CardDescription>Daftar kelahiran dalam keluarga</CardDescription>
               </CardHeader>
               <CardContent>
-                {kelahiran.length > 0 ? (
+                {kelahiran && kelahiran?.length > 0 ? (
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse">
                       <thead>
@@ -154,10 +154,10 @@ export default function KeluargaPage() {
                       </thead>
                       <tbody>
                         {kelahiran.map((k) => (
-                          <tr key={k.id_lahir} className="border-b">
+                          <tr key={k.id} className="border-b">
                             <td className="py-2 px-4">{k.nama}</td>
-                            <td className="py-2 px-4">{formatDate(k.tgl_lh)}</td>
-                            <td className="py-2 px-4">{k.jekel === "LK" ? "Laki-laki" : "Perempuan"}</td>
+                            <td className="py-2 px-4">{formatDate(k.tanggal_lahir)}</td>
+                            <td className="py-2 px-4">{k.jenis_kelamin === "LK" ? "Laki-laki" : "Perempuan"}</td>
                           </tr>
                         ))}
                       </tbody>

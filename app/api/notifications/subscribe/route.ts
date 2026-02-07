@@ -1,33 +1,32 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getRedisData, setRedisData, getRedisKeys, deleteRedisData } from "@/lib/redis-service"
+import { supabase } from "@/app/utils/supabase"
 
 // Store push subscription
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { subscription, userId } = body
+    const { token, user_id } = body
 
-    if (!subscription) {
-      return NextResponse.json({ error: "Subscription is required" }, { status: 400 })
+    if (!token) {
+      return NextResponse.json({ error: "Token is required" }, { status: 400 })
+    }
+    
+    const {error} = await supabase.from("push_subscriptions").insert({user_id,token})
+    if(error){
+      if(error.code == "23505"){
+        const {error} = await supabase.from("push_subscriptions").update({token}).eq("id", user_id)
+        if(error){
+          console.log(error)
+          return NextResponse.json({ error: "Terjadi kesalahan" }, { status: 400 })
+        }
+      } else {
+        console.log(error)
+        return NextResponse.json({ error: "Terjadi kesalahan" }, { status: 400 })
+      }
     }
 
-    // Get all existing subscriptions
-    const keys = await getRedisKeys("push_subscription:*")
-    const subscriptionList = await Promise.all(keys.map((key) => getRedisData(key)))
-    const subscriptionIds = subscriptionList.map((s) => (s ? s.id : 0))
-    const newId = subscriptionIds.length > 0 ? Math.max(...subscriptionIds) + 1 : 1
-
-    // Store subscription
-    const newSubscription = {
-      id: newId,
-      subscription,
-      userId: userId || null,
-      createdAt: new Date().toISOString(),
-    }
-
-    await setRedisData(`push_subscription:${newId}`, newSubscription)
-
-    return NextResponse.json({ success: true, data: newSubscription })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error storing subscription:", error)
     return NextResponse.json({ error: "Failed to store subscription" }, { status: 500 })

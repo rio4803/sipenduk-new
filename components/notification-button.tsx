@@ -4,14 +4,18 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Bell, BellOff } from "lucide-react"
 import { subscribeToPush, unsubscribeFromPush } from "@/lib/push-notifications"
+import { getToken } from "firebase/messaging"
+import { getFirebaseMessaging } from "@/lib/firebase"
+import { useAuth } from "@/lib/auth-context"
 
 export function NotificationButton() {
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isSupported, setIsSupported] = useState(false)
+  const {user} = useAuth()
 
   useEffect(() => {
     // Check if notifications are supported
-    if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
+    if ('Notification' in window && 'serviceWorker' in navigator) {
       setIsSupported(true)
       checkSubscription()
     }
@@ -28,23 +32,30 @@ export function NotificationButton() {
   }
 
   async function handleSubscribe() {
+    if(!user) return
     try {
       // Request notification permission
+      const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+      const messaging = await getFirebaseMessaging();
       const permission = await Notification.requestPermission()
       
-      if (permission !== 'granted') {
-        alert('Notifikasi ditolak. Silakan aktifkan notifikasi di pengaturan browser.')
-        return
-      }
-
-      const success = await subscribeToPush()
-
-      if (success) {
-        setIsSubscribed(true)
-        alert('Berhasil berlangganan notifikasi!')
-      } else {
-        alert('Gagal berlangganan notifikasi')
-      }
+      if (permission == 'granted') {
+        const token = await getToken(messaging, {
+          vapidKey: process.env.NEXT_PUBLIC_FCM_VAPID_KEY,
+          serviceWorkerRegistration: registration,
+        });
+  
+        const success = await subscribeToPush(user.id, token) 
+        if(success){
+          setIsSubscribed(true)
+          alert('Berhasil berlangganan notifikasi!')
+        } else {
+          alert('Gagal berlangganan notifikasi')
+        }
+      } 
+      
+      alert('Notifikasi ditolak. Silakan aktifkan notifikasi di pengaturan browser.')
+      return
     } catch (error) {
       console.error('Error subscribing:', error)
       alert('Terjadi kesalahan saat berlangganan notifikasi')

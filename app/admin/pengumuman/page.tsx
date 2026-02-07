@@ -3,17 +3,13 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { getPengumumanData, deletePengumuman } from "./actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { useAuth } from "@/lib/auth-context"
 import { Trash2, Plus, Bell } from "lucide-react"
 
 export default function PengumumanPage() {
-  const router = useRouter()
-  const { user } = useAuth()
   const [pengumumanList, setPengumumanList] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -32,7 +28,7 @@ export default function PengumumanPage() {
     }
   }
 
-  async function handleDelete(id: number) {
+  async function handleDelete(id: string) {
     if (!confirm("Apakah Anda yakin ingin menghapus pengumuman ini?")) return
 
     const result = await deletePengumuman(id)
@@ -57,7 +53,7 @@ export default function PengumumanPage() {
           body: pengumuman.isi.substring(0, 100) + (pengumuman.isi.length > 100 ? "..." : ""),
           data: {
             url: "/dashboard/notifikasi",
-            pengumumanId: pengumuman.id_pengumuman,
+            pengumumanId: pengumuman.id,
           },
         }),
       })
@@ -65,7 +61,7 @@ export default function PengumumanPage() {
       const result = await response.json()
       
       if (result.success) {
-        alert(`Notifikasi berhasil dikirim ke ${result.sent} pengguna`)
+        alert(`Notifikasi berhasil dikirim ke semua pengguna`)
       } else {
         alert("Gagal mengirim notifikasi: " + result.error)
       }
@@ -105,7 +101,7 @@ export default function PengumumanPage() {
       ) : (
         <div className="grid gap-4">
           {pengumumanList.map((pengumuman) => (
-            <Card key={pengumuman.id_pengumuman}>
+            <Card key={pengumuman.id}>
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
@@ -118,7 +114,7 @@ export default function PengumumanPage() {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
-                      {" · "}oleh {pengumuman.penulis}
+                      {" · "}oleh {pengumuman.username}
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
@@ -132,7 +128,7 @@ export default function PengumumanPage() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleDelete(pengumuman.id_pengumuman)}
+                      onClick={() => handleDelete(pengumuman.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

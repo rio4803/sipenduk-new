@@ -24,7 +24,7 @@ export async function getPenggunaData() {
 
 export async function getPenggunaById(id: string) {
   try {
-    const {data, error} = await supabase.from("pengguna").select("name, username, role, id").eq("id", id).single()
+    const {data, error} = await supabase.from("pengguna").select("name, username, role, id, id_penduduk").eq("id", id).single()
     if(error){
       console.log(error)
       return null

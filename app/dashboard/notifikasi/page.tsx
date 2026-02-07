@@ -60,7 +60,7 @@ export default function DashboardNotifikasiPage() {
           </Card>
         ) : (
           notifications.map((notif: any) => (
-            <Card key={notif.id} className={notif.read_by?.includes(user?.id.toString()) ? "bg-background" : "bg-muted/30 border-primary/20"}>
+            <Card key={notif.id} className={notif.read_by?.includes(user?.id) ? "bg-background" : "bg-muted/30 border-primary/20"}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div>
