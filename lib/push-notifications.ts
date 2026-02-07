@@ -14,15 +14,32 @@ export async function subscribeToPush(userId: string, token: string) {
     return result.success
 }
 
-export async function unsubscribeFromPush() {
-    if (!('serviceWorker' in navigator)) return false
+export async function unsubscribeFromPush(userId: string) {
+    const request = await fetch("/api/notifications/unsubscribe", {
+        method: "POST",
+        headers: {
+            "Content-Type" : "application/json"
+        },
+        body: JSON.stringify({
+            user_id: userId,
+        })
+    })
 
-    const registration = await navigator.serviceWorker.ready
-    const subscription = await registration.pushManager.getSubscription()
+    const response = await request.json()
+    return response.success
+}
 
-    if (subscription) {
-        await subscription.unsubscribe()
-        return true
-    }
-    return false
+export async function checkSubscription(userId: string){
+    const request = await fetch("/api/notifications/check-subs", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            user_id: userId
+        })
+    })
+
+    const {subsStatus} = await request.json()
+    return subsStatus
 }

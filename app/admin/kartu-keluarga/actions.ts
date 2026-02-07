@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 import { supabase } from "@/app/utils/supabase"
+import { logActivity } from "@/lib/activity-logger"
 
 // Schema validasi untuk kartu keluarga
 const kartuKeluargaSchema = z.object({
@@ -138,10 +139,11 @@ export async function createKartuKeluarga(formData: FormData) {
       pekerjaan: pekerjaan_kepala || "-",
       status_penduduk: "Ada" as const,
     }
-    const {data: penduduk, error: errPenduduk} = await supabase.from("penduduk").insert(newPenduduk).select("nama").single()
+    const {data: penduduk, error: errPenduduk} = await supabase.from("penduduk").insert(newPenduduk).select("id, nama").single()
 
     // BUAT AKUN PENGGUNA OTOMATIS
     const newUser = {
+      id_penduduk: penduduk?.id,
       username: newPenduduk.nik,
       password: generateRandomPassword(),
       role: "penduduk",

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getRedisData, setRedisData, getRedisKeys, deleteRedisData } from "@/lib/redis-service"
 import { supabase } from "@/app/utils/supabase"
 
 // Store push subscription
@@ -33,35 +32,35 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Get all subscriptions (for admin)
-export async function GET(request: NextRequest) {
-  try {
-    const keys = await getRedisKeys("push_subscription:*")
-    const subscriptionPromises = keys.map((key) => getRedisData(key))
-    const subscriptions = await Promise.all(subscriptionPromises)
+// // Get all subscriptions (for admin)
+// export async function GET(request: NextRequest) {
+//   try {
+//     const keys = await getRedisKeys("push_subscription:*")
+//     const subscriptionPromises = keys.map((key) => getRedisData(key))
+//     const subscriptions = await Promise.all(subscriptionPromises)
 
-    return NextResponse.json({ success: true, data: subscriptions.filter(Boolean) })
-  } catch (error) {
-    console.error("Error fetching subscriptions:", error)
-    return NextResponse.json({ error: "Failed to fetch subscriptions" }, { status: 500 })
-  }
-}
+//     return NextResponse.json({ success: true, data: subscriptions.filter(Boolean) })
+//   } catch (error) {
+//     console.error("Error fetching subscriptions:", error)
+//     return NextResponse.json({ error: "Failed to fetch subscriptions" }, { status: 500 })
+//   }
+// }
 
-// Delete subscription (unsubscribe)
-export async function DELETE(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get("id")
+// // Delete subscription (unsubscribe)
+// export async function DELETE(request: NextRequest) {
+//   try {
+//     const { searchParams } = new URL(request.url)
+//     const id = searchParams.get("id")
 
-    if (!id) {
-      return NextResponse.json({ error: "Subscription ID is required" }, { status: 400 })
-    }
+//     if (!id) {
+//       return NextResponse.json({ error: "Subscription ID is required" }, { status: 400 })
+//     }
 
-    await deleteRedisData(`push_subscription:${id}`)
+//     await deleteRedisData(`push_subscription:${id}`)
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error("Error deleting subscription:", error)
-    return NextResponse.json({ error: "Failed to delete subscription" }, { status: 500 })
-  }
-}
+//     return NextResponse.json({ success: true })
+//   } catch (error) {
+//     console.error("Error deleting subscription:", error)
+//     return NextResponse.json({ error: "Failed to delete subscription" }, { status: 500 })
+//   }
+// }

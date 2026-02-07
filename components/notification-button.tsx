@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Bell, BellOff } from "lucide-react"
-import { subscribeToPush, unsubscribeFromPush } from "@/lib/push-notifications"
+import { checkSubscription, subscribeToPush, unsubscribeFromPush } from "@/lib/push-notifications"
 import { getToken } from "firebase/messaging"
 import { getFirebaseMessaging } from "@/lib/firebase"
 import { useAuth } from "@/lib/auth-context"
@@ -17,18 +17,14 @@ export function NotificationButton() {
     // Check if notifications are supported
     if ('Notification' in window && 'serviceWorker' in navigator) {
       setIsSupported(true)
-      checkSubscription()
+      checkSubs()
     }
   }, [])
 
-  async function checkSubscription() {
-    try {
-      const registration = await navigator.serviceWorker.ready
-      const subscription = await registration.pushManager.getSubscription()
-      setIsSubscribed(!!subscription)
-    } catch (error) {
-      console.error("Error checking subscription:", error)
-    }
+  async function checkSubs(){
+    if(!user) return
+    const subsStatus = await checkSubscription(user.id)
+    setIsSubscribed(subsStatus)
   }
 
   async function handleSubscribe() {
@@ -39,6 +35,11 @@ export function NotificationButton() {
       const messaging = await getFirebaseMessaging();
       const permission = await Notification.requestPermission()
       
+      if(!messaging){
+        alert("FCM belum siap untuk notifikasi!")
+        return
+      }
+
       if (permission == 'granted') {
         const token = await getToken(messaging, {
           vapidKey: process.env.NEXT_PUBLIC_FCM_VAPID_KEY,
@@ -52,6 +53,7 @@ export function NotificationButton() {
         } else {
           alert('Gagal berlangganan notifikasi')
         }
+        return
       } 
       
       alert('Notifikasi ditolak. Silakan aktifkan notifikasi di pengaturan browser.')
@@ -63,8 +65,9 @@ export function NotificationButton() {
   }
 
   async function handleUnsubscribe() {
+    if(!user) return
     try {
-      const success = await unsubscribeFromPush()
+      const success = await unsubscribeFromPush(user.id)
       if (success) {
         setIsSubscribed(false)
         alert('Berhasil berhenti berlangganan notifikasi')

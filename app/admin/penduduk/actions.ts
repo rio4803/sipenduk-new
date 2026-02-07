@@ -101,7 +101,6 @@ export async function getPendudukById(id: string) {
 // DONE
 export async function createPenduduk(formData: FormData) {
   const id_kk = formData.get("id_kk")
-  const id_penduduk = crypto.randomUUID()
 
   try {
     // validate form
@@ -144,6 +143,7 @@ export async function createPenduduk(formData: FormData) {
     // buat akun penduduk
     const password = generateRandomPassword(8)
     const newUser = {
+      id_penduduk: penduduk.id,
       name: validatedFields.data.nama,
       username: validatedFields.data.nik,
       password: password,
