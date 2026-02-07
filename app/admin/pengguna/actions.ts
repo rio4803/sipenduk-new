@@ -2,26 +2,34 @@
 
 import { getRedisData, getRedisKeys, setRedisData, deleteRedisData } from "@/lib/redis-service"
 import { revalidatePath } from "next/cache"
-import { z } from "zod"
+import { success, z } from "zod"
 import { generateRandomPassword } from "@/lib/utils"
+import { supabase } from "@/app/utils/supabase"
+import { logActivity } from "@/lib/activity-logger"
 
 export async function getPenggunaData() {
   try {
-    // Ambil data pengguna dari Redis
-    const keys = await getRedisKeys("pengguna:*")
-    const penggunaPromises = keys.map((key) => getRedisData(key))
-    const penggunaList = await Promise.all(penggunaPromises)
-
-    return penggunaList.filter(Boolean)
+    const {data, error} = await supabase.from("pengguna").select("name, username, role, id, id_penduduk")
+    if(error){
+      console.log(error)
+      return []
+    }
+    
+    return data
   } catch (error) {
     console.error("Error fetching pengguna data:", error)
     throw new Error("Gagal mengambil data pengguna")
   }
 }
 
-export async function getPenggunaById(id: number) {
+export async function getPenggunaById(id: string) {
   try {
-    return await getRedisData(`pengguna:${id}`)
+    const {data, error} = await supabase.from("pengguna").select("name, username, role, id").eq("id", id).single()
+    if(error){
+      console.log(error)
+      return null
+    }
+    return data
   } catch (error) {
     console.error(`Error getting pengguna with id ${id}:`, error)
     throw new Error("Gagal mengambil data pengguna")
@@ -30,22 +38,22 @@ export async function getPenggunaById(id: number) {
 
 // Schema validasi untuk pengguna
 const penggunaSchema = z.object({
-  nama_pengguna: z.string().min(1, "Nama pengguna harus diisi"),
+  name: z.string().min(1, "Nama pengguna harus diisi"),
   username: z.string().min(1, "Username harus diisi"),
-  password: z.string().optional(),
-  level: z.enum(["admin", "guest"], {
-    errorMap: () => ({ message: "Level harus dipilih" }),
+  password: z.string().min(1, "Password harus diisi"),
+  role: z.enum(["admin", "penduduk"], {
+    error: () => ({ message: "Level harus dipilih" }),
   }),
 })
 
-export async function createPengguna(formData: FormData) {
+export async function createPengguna(formData: FormData, user_id: string) {
   try {
     // Validasi input
     const validatedFields = penggunaSchema.safeParse({
-      nama_pengguna: formData.get("nama_pengguna"),
+      name: formData.get("nama_pengguna"),
       username: formData.get("username"),
-      password: formData.get("password") || generateRandomPassword(8),
-      level: formData.get("level"),
+      password: formData.get("password"),
+      role: formData.get("role"),
     })
 
     if (!validatedFields.success) {
@@ -55,29 +63,28 @@ export async function createPengguna(formData: FormData) {
       }
     }
 
-    // Periksa apakah username sudah ada
-    const keys = await getRedisKeys("pengguna:*")
-    const penggunaPromises = keys.map((key) => getRedisData(key))
-    const penggunaList = await Promise.all(penggunaPromises)
-    const usernameExists = penggunaList.some((p) => p && p.username === validatedFields.data.username)
-
-    if (usernameExists) {
-      return { error: "Username sudah digunakan" }
-    }
-
-    // Dapatkan ID baru
-    const penggunaIds = penggunaList.map((p) => (p ? p.id_pengguna : 0))
-    const newId = penggunaIds.length > 0 ? Math.max(...penggunaIds) + 1 : 1
-
     const newPengguna = {
-      id_pengguna: newId,
       ...validatedFields.data,
+      id_penduduk: formData.get("id_pdd") || null
     }
 
-    // Simpan ke Redis
-    await setRedisData(`pengguna:${newId}`, newPengguna)
+    const {error} = await supabase.from("pengguna").insert(newPengguna)
+    if(error){
+      if(error.code == "23505"){
+        return {error: "Akun sudah terdaftar"}
+      }
+      console.log(error)
+      return {error: "Terjadi masalah saat membuat user baru"}
+    }
 
-    revalidatePath("/admin/pengguna")
+    // log
+    await logActivity({
+      user_id,
+      type: "Pengguna",
+      entity_type: "pengguna",
+      description: `Menambahkan akun untuk ${validatedFields.data.username}`
+    })
+
     return { success: true, data: newPengguna }
   } catch (error) {
     console.error("Error creating pengguna:", error)
@@ -85,21 +92,26 @@ export async function createPengguna(formData: FormData) {
   }
 }
 
-export async function updatePengguna(id: number, formData: FormData) {
+export async function updatePengguna(id: string, formData: FormData, user_id: string) {
   try {
-    // Periksa apakah pengguna ada
-    const pengguna = await getRedisData(`pengguna:${id}`)
-    if (!pengguna) {
-      return { error: "Pengguna tidak ditemukan" }
+    
+    const password = formData.get("password")
+    let pengguna = null
+    if(!password){
+      const {data, error} = await supabase.from("pengguna").select("password").eq("id", id).single()
+      if(error){
+        console.log(error)
+        return {error: "Terjadi masalah saat memuat data pengguna"}
+      }
+      
+      pengguna = data
     }
 
-    // Validasi input
-    const password = formData.get("password") as string
     const validatedFields = penggunaSchema.safeParse({
-      nama_pengguna: formData.get("nama_pengguna"),
+      name: formData.get("nama_pengguna"),
       username: formData.get("username"),
-      password: password && password.trim() !== "" ? password : pengguna.password,
-      level: formData.get("level"),
+      password: password ? password : pengguna?.password,
+      role: formData.get("level"),
     })
 
     if (!validatedFields.success) {
@@ -108,60 +120,62 @@ export async function updatePengguna(id: number, formData: FormData) {
         errors: validatedFields.error.flatten().fieldErrors,
       }
     }
-
-    // Periksa apakah username sudah digunakan oleh pengguna lain
-    const keys = await getRedisKeys("pengguna:*")
-    const penggunaPromises = keys.map((key) => getRedisData(key))
-    const penggunaList = await Promise.all(penggunaPromises)
-    const usernameExists = penggunaList.some(
-      (p) => p && p.id_pengguna !== id && p.username === validatedFields.data.username,
-    )
-
-    if (usernameExists) {
-      return { error: "Username sudah digunakan oleh pengguna lain" }
+    
+    const {error} = await supabase.from("pengguna").update(validatedFields.data).eq("id", id)
+    if(error){
+      console.log(error)
+      return {error: "Terjadi masalah saat memperbarui data pengguna"}
     }
 
-    // Update pengguna
-    const updatedPengguna = {
-      ...pengguna,
-      ...validatedFields.data,
-    }
+    // log
+    await logActivity({
+      user_id,
+      type: "Pengguna",
+      entity_type: "pengguna",
+      description: `Memperbarui data pengguna ${validatedFields.data.username}`
+    })
 
-    await setRedisData(`pengguna:${id}`, updatedPengguna)
-
-    revalidatePath("/admin/pengguna")
-    return { success: true, data: updatedPengguna }
+    return { success: true }
   } catch (error) {
     console.error("Error updating pengguna:", error)
     return { error: "Gagal memperbarui data pengguna" }
   }
 }
 
-export async function deletePengguna(id: number) {
+export async function deletePengguna(id: string, user_id: string) {
   try {
-    // Periksa apakah pengguna ada
-    const pengguna = await getRedisData(`pengguna:${id}`)
-    if (!pengguna) {
-      return { error: "Pengguna tidak ditemukan" }
+    const {data: user, error: errUser} = await supabase.from("pengguna").select("role").eq("id", id).single()
+    if(errUser){
+      console.log(errUser)
+      return {error: "Terjadi masalah"}
     }
 
-    // Periksa apakah pengguna adalah admin terakhir
-    if (pengguna.level === "admin") {
-      const keys = await getRedisKeys("pengguna:*")
-      const penggunaPromises = keys.map((key) => getRedisData(key))
-      const penggunaList = await Promise.all(penggunaPromises)
-      const adminCount = penggunaList.filter((p) => p && p.level === "admin").length
-
-      if (adminCount <= 1) {
-        return { error: "Tidak dapat menghapus admin terakhir" }
+    if(user.role == "admin"){
+      const {count: adminCount, error} = await supabase.from("pengguna").select("role", {count: "exact", head: true}).eq("role", "admin")
+      if(!adminCount){
+        console.log(error)
+        return {error: "Terjadi masalah teknis"}
+      }
+      if(adminCount < 2){
+        return {error: "Tidak dapat menghapus admin terakhir!"}
       }
     }
 
-    // Hapus pengguna
-    await deleteRedisData(`pengguna:${id}`)
+    const {data, error} = await supabase.from("pengguna").delete().eq("id", id).select("username").single()
+    if(error){
+      console.log(error);
+      return { error: "Terjadi masalah saat menghapus pengguna" }
+    }
+    
+    // log
+    await logActivity({
+      user_id,
+      type: "Pengguna",
+      entity_type: "pengguna",
+      description: `Menghapus akun ${data.username}`
+    })
 
-    revalidatePath("/admin/pengguna")
-    return { success: true }
+    return {success: true}
   } catch (error) {
     console.error("Error deleting pengguna:", error)
     return { error: "Gagal menghapus data pengguna" }

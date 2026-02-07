@@ -31,7 +31,7 @@ export default function TambahPengumumanPage() {
     const formData = new FormData(e.currentTarget)
 
     try {
-      const result = await createPengumuman(formData, user.id, user.nama)
+      const result = await createPengumuman(formData, user.id, user.name)
 
       if (result.error) {
         setError(result.error)

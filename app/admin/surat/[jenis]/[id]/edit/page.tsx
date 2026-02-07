@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import Link from "next/link"
 import { useRouter, notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { FormStatus } from "@/components/form-status"
-import { DatePicker } from "@/components/ui/date-picker.tsx"
+import { DatePicker } from "@/components/ui/date-picker"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { getSuratById, updateSurat } from "../../../actions"
 import { getPendudukData } from "../../../../penduduk/actions"
@@ -22,7 +22,7 @@ import { LetterPreview } from "@/components/surat/letter-preview"
 export default function EditSuratPage({
   params,
 }: {
-  params: { jenis: string; id: string }
+  params: Promise<{ jenis: string; id: string }>
 }) {
   const router = useRouter()
   const { user } = useAuth()
@@ -35,8 +35,8 @@ export default function EditSuratPage({
   const [isLoading, setIsLoading] = useState(true)
   const [letterDate, setLetterDate] = useState<Date | null>(null)
 
-  const id = Number.parseInt(params.id)
-  const jenisSurat = params.jenis
+  const {id} = use(params)
+  const {jenis: jenisSurat} = use(params)
 
   useEffect(() => {
     async function loadData() {
@@ -82,7 +82,7 @@ export default function EditSuratPage({
 
       if (result.error) {
         setError(result.error)
-        setValidationErrors(result.errors || null)
+        // setValidationErrors(result.errors || null)
       } else if (result.success) {
         setSuccess("Surat berhasil diperbarui")
         // Redirect setelah 2 detik
@@ -200,19 +200,18 @@ export default function EditSuratPage({
                   name="tanggal_surat"
                   selected={letterDate}
                   onSelect={setLetterDate}
-                  required
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="id_penduduk">Penduduk</Label>
-                <Select name="id_penduduk" defaultValue={surat.id_penduduk.toString()} required>
+                <Select name="id_penduduk" defaultValue={surat.id_penduduk} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih penduduk" />
                   </SelectTrigger>
                   <SelectContent>
                     {penduduk.map((p) => (
-                      <SelectItem key={p.id_pend} value={p.id_pend.toString()}>
+                      <SelectItem key={p.id} value={p.id}>
                         {p.nama} - {p.nik}
                       </SelectItem>
                     ))}

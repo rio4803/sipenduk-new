@@ -11,17 +11,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { DatePicker } from "@/components/ui/date-picker.tsx"
+import { DatePicker } from "@/components/ui/date-picker"
 import { FormStatus } from "@/components/form-status"
 import { LetterPreview } from "@/components/surat/letter-preview"
 import { useAuth } from "@/lib/auth-context"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { getPendudukData } from "@/app/admin/penduduk/actions"
 
 interface LetterFormProps {
   type: string
   title: string
   description: string
-  onSubmit: (formData: FormData, userId: number) => Promise<any>
+  onSubmit: (formData: FormData) => Promise<any>
   renderLetterContent: (data: any) => React.ReactNode
   additionalFields?: React.ReactNode
 }
@@ -56,11 +57,8 @@ export function LetterForm({
   useEffect(() => {
     async function loadPenduduk() {
       try {
-        const response = await fetch("/api/penduduk")
-        if (response.ok) {
-          const data = await response.json()
-          setPenduduk(data.filter((p: any) => p.status === "Ada"))
-        }
+        const data = await getPendudukData()
+        setPenduduk(data.filter((p: any) => p.status_penduduk == "Ada"))
       } catch (error) {
         console.error("Error loading penduduk data:", error)
       } finally {
@@ -87,7 +85,7 @@ export function LetterForm({
     }
 
     try {
-      const result = await onSubmit(formDataObj, user.id)
+      const result = await onSubmit(formDataObj)
 
       if (result.error) {
         setError(result.error)
@@ -111,8 +109,8 @@ export function LetterForm({
   }
 
   function handleSelectChange(name: string, value: string) {
-    if (name === "id_penduduk") {
-      const selected = penduduk.find((p) => p.id_pend.toString() === value)
+    if (name == "id_penduduk") {
+      const selected = penduduk.find((p) => p.id == value)
       if (selected) {
         setSelectedPenduduk(selected)
         setFormData((prev: any) => ({
@@ -175,7 +173,6 @@ export function LetterForm({
                   name="tanggal_surat"
                   selected={letterDate}
                   onSelect={handleDateChange}
-                  required
                 />
               </div>
 
@@ -192,7 +189,7 @@ export function LetterForm({
                   </SelectTrigger>
                   <SelectContent>
                     {penduduk.map((p) => (
-                      <SelectItem key={p.id_pend} value={p.id_pend.toString()}>
+                      <SelectItem key={p.id} value={p.id}>
                         {p.nama} - {p.nik}
                       </SelectItem>
                     ))}

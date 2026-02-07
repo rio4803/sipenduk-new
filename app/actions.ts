@@ -41,11 +41,10 @@ export async function login(formData: FormData) {
 
     // Log activity
     await logActivity({
-      userId: user.id,
+      user_id: user.id,
       type: "Login",
       description: "Berhasil login ke sistem",
-      entityId: user.id,
-      entityType: "user",
+      entity_type: "user",
     })
 
     // Return success instead of redirecting to prevent potential redirect loops
@@ -56,15 +55,14 @@ export async function login(formData: FormData) {
   }
 }
 
-export async function logout(userId: number) {
+export async function logout(userId: string) {
   try {
     // Log activity
     await logActivity({
-      userId,
+      user_id: userId,
       type: "Logout",
       description: "Berhasil logout dari sistem",
-      entityId: userId,
-      entityType: "user",
+      entity_type: "user",
     })
   } catch (error) {
     console.error("Error logging logout:", error)

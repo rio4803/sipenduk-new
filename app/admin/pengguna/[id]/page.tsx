@@ -1,23 +1,25 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { use, useEffect, useState } from "react"
 import Link from "next/link"
 import { notFound, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getPenggunaById, deletePengguna } from "../actions"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { useAuth } from "@/lib/auth-context"
 
 export default function DetailPenggunaPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const id = Number.parseInt(params.id)
+  const {id} = use(params)
   const router = useRouter()
   const [pengguna, setPengguna] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const {user} = useAuth()
 
   useEffect(() => {
     async function loadData() {
@@ -39,9 +41,10 @@ export default function DetailPenggunaPage({
   }, [id])
 
   const handleDelete = async () => {
+    if(!user) return
     if (confirm("Apakah Anda yakin ingin menghapus pengguna ini?")) {
       try {
-        const result = await deletePengguna(id)
+        const result = await deletePengguna(id, user.id)
 
         if (result.error) {
           setError(result.error)
@@ -96,7 +99,7 @@ export default function DetailPenggunaPage({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium">Nama</p>
-              <p className="text-lg">{pengguna.nama_pengguna}</p>
+              <p className="text-lg">{pengguna.name}</p>
             </div>
             <div>
               <p className="text-sm font-medium">Username</p>
@@ -104,7 +107,7 @@ export default function DetailPenggunaPage({
             </div>
             <div>
               <p className="text-sm font-medium">Level</p>
-              <p className="text-lg">{pengguna.level === "admin" ? "Administrator" : "Tamu"}</p>
+              <p className="text-lg">{pengguna.role || "-"}</p>
             </div>
             <div>
               <p className="text-sm font-medium">Password</p>

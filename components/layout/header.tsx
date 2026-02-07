@@ -71,7 +71,7 @@ export function Header() {
     // return () => clearInterval(interval)
   }, [user, notifications.length]) // Add notifications.length to deps to compare
 
-  const notificationPath = isAdmin ? "/admin/notifikasi" : "/dashboard/notifikasi"
+  const notificationPath = isAdmin ? "/admin/pengumuman" : "/dashboard/notifikasi"
 
   // Auto-subscribe to notifications if permission is granted but not subscribed
   useEffect(() => {

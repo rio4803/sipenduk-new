@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, use } from "react"
 import { useRouter, notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
@@ -12,7 +12,7 @@ import { LetterTemplate } from "@/components/surat/letter-template"
 export default function SuratPrintPage({
   params,
 }: {
-  params: { jenis: string; id: string }
+  params: Promise<{ jenis: string; id: string }>
 }) {
   const router = useRouter()
   const [surat, setSurat] = useState<any>(null)
@@ -20,8 +20,8 @@ export default function SuratPrintPage({
   const [error, setError] = useState<string | null>(null)
   const printRef = useRef<HTMLDivElement>(null)
 
-  const id = Number.parseInt(params.id)
-  const jenisSurat = params.jenis
+  const {id} = use(params)
+  const {jenis: jenisSurat} = use(params)
 
   useEffect(() => {
     async function loadData() {

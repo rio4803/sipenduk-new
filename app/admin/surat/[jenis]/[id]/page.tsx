@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import Link from "next/link"
 import { useRouter, notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -26,7 +26,7 @@ import { LetterPreview } from "@/components/surat/letter-preview"
 export default function SuratDetailPage({
   params,
 }: {
-  params: { jenis: string; id: string }
+  params: Promise<{ jenis: string; id: string }>
 }) {
   const router = useRouter()
   const { user } = useAuth()
@@ -35,8 +35,8 @@ export default function SuratDetailPage({
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const id = Number.parseInt(params.id)
-  const jenisSurat = params.jenis
+  const {id} = use(params)
+  const {jenis: jenisSurat} = use(params)
 
   useEffect(() => {
     async function loadData() {

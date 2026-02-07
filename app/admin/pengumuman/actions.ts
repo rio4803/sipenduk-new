@@ -3,6 +3,7 @@
 import { getRedisData, getRedisKeys, setRedisData, deleteRedisData } from "@/lib/redis-service"
 import { revalidatePath } from "next/cache"
 import { sendPushNotificationToAll } from "@/lib/push-notification-server"
+import { supabase } from "@/app/utils/supabase"
 
 export interface Pengumuman {
   id_pengumuman: number
@@ -41,7 +42,7 @@ export async function getPengumumanById(id: number) {
 }
 
 // Create pengumuman
-export async function createPengumuman(formData: FormData, userId: number, userName: string) {
+export async function createPengumuman(formData: FormData, userId: string, userName: string) {
   try {
     const judul = formData.get("judul")?.toString()
     const isi = formData.get("isi")?.toString()
@@ -50,37 +51,32 @@ export async function createPengumuman(formData: FormData, userId: number, userN
       return { error: "Judul dan isi pengumuman harus diisi" }
     }
 
-    // Get new ID
-    const keys = await getRedisKeys("pengumuman:*")
-    const pengumumanList = await Promise.all(keys.map((key) => getRedisData(key)))
-    const pengumumanIds = pengumumanList.map((p) => (p ? p.id_pengumuman : 0))
-    const newId = pengumumanIds.length > 0 ? Math.max(...pengumumanIds) + 1 : 1
-
     const newPengumuman = {
-      id_pengumuman: newId,
       judul,
       isi,
       tanggal: new Date().toISOString(),
-      penulis: userName,
-      id_user: userId,
+      penulis: userId
     }
 
-    await setRedisData(`pengumuman:${newId}`, newPengumuman)
-
-    // Send push notification
-    try {
-      await sendPushNotificationToAll({
-        title: `Pengumuman Baru: ${judul}`,
-        body: isi.length > 50 ? `${isi.substring(0, 50)}...` : isi,
-        data: { url: "/dashboard/notifikasi" } // Redirect to notification/dashboard page
-      })
-    } catch (pushError) {
-      console.error("Failed to send push notification:", pushError)
-      // Don't fail the request if push fails, just log it
+    const {error} = await supabase.from("pengumuman").insert(newPengumuman)
+    if(error){
+      console.log(error)
+      return {error: "Terjadi kesalahan saat membuat pengumuman baru"}
     }
 
-    revalidatePath("/admin/pengumuman")
-    return { success: true, data: newPengumuman }
+    // // Send push notification
+    // try {
+    //   await sendPushNotificationToAll({
+    //     title: `Pengumuman Baru: ${judul}`,
+    //     body: isi.length > 50 ? `${isi.substring(0, 50)}...` : isi,
+    //     data: { url: "/dashboard/notifikasi" } // Redirect to notification/dashboard page
+    //   })
+    // } catch (pushError) {
+    //   console.error("Failed to send push notification:", pushError)
+    //   // Don't fail the request if push fails, just log it
+    // }
+
+    return { success: true }
   } catch (error) {
     console.error("Error creating pengumuman:", error)
     return { error: "Gagal membuat pengumuman" }

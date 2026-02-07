@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { DataTableWrapper } from "@/components/ui/data-table-wrapper"
@@ -13,11 +13,11 @@ import { getSuratByJenis } from "../actions"
 export default function JenisSuratPage({
   params,
 }: {
-  params: { jenis: string }
+  params: Promise<{ jenis: string }>
 }) {
   const [surat, setSurat] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const jenisSurat = params.jenis
+  const {jenis: jenisSurat} = use(params)
 
   useEffect(() => {
     async function loadData() {
@@ -46,12 +46,12 @@ export default function JenisSuratPage({
     {
       accessorKey: "tanggal_surat",
       header: "Tanggal Surat",
-      cell: ({ row }) => <div>{formatDate(row.original.tanggal_surat)}</div>,
+      cell: ({ row }: { row: any }) => <div>{formatDate(row.original.tanggal_surat)}</div>,
     },
     {
       id: "actions",
       header: "Aksi",
-      cell: ({ row }) => (
+      cell: ({ row }: { row: any }) => (
         <div className="flex gap-2">
           <Button asChild size="sm" variant="outline">
             <Link href={`/admin/surat/${jenisSurat}/${row.original.id}`}>

@@ -3,15 +3,16 @@ import { useRouter } from "next/navigation"
 import { LetterForm } from "@/components/surat/letter-form"
 import { createSurat } from "../../actions"
 import { useAuth } from "@/lib/auth-context"
+import { use } from "react"
 
 export default function BuatSuratPage({
   params,
 }: {
-  params: { jenis: string }
+  params: Promise<{ jenis: string }>
 }) {
   const router = useRouter()
   const { user } = useAuth()
-  const jenisSurat = params.jenis
+  const {jenis: jenisSurat} = use(params)
 
   let title = ""
   let description = ""

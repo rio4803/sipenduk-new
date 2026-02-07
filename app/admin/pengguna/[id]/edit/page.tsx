@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import Link from "next/link"
 import { useRouter, notFound } from "next/navigation"
 import { getPenggunaById, updatePengguna } from "../../actions"
@@ -13,13 +13,14 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FormStatus } from "@/components/form-status"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { useAuth } from "@/lib/auth-context"
 
 export default function EditPenggunaPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const id = Number.parseInt(params.id)
+  const {id} = use(params)
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -27,6 +28,7 @@ export default function EditPenggunaPage({
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null)
   const [pengguna, setPengguna] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const {user} = useAuth()
 
   useEffect(() => {
     async function loadData() {
@@ -49,6 +51,8 @@ export default function EditPenggunaPage({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if(!user) return
+
     setIsPending(true)
     setError(null)
     setSuccess(null)
@@ -57,7 +61,7 @@ export default function EditPenggunaPage({
     const formData = new FormData(e.currentTarget)
 
     try {
-      const result = await updatePengguna(id, formData)
+      const result = await updatePengguna(id, formData, user.id)
 
       if (result.error) {
         setError(result.error)
@@ -99,7 +103,7 @@ export default function EditPenggunaPage({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="nama_pengguna">Nama Lengkap</Label>
-                <Input id="nama_pengguna" name="nama_pengguna" defaultValue={pengguna.nama_pengguna} required />
+                <Input id="nama_pengguna" name="nama_pengguna" defaultValue={pengguna.name} required />
               </div>
 
               <div className="space-y-2">
@@ -109,13 +113,13 @@ export default function EditPenggunaPage({
 
               <div className="space-y-2">
                 <Label htmlFor="level">Level</Label>
-                <Select name="level" defaultValue={pengguna.level} required>
+                <Select name="level" defaultValue={pengguna.role} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih level" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="admin">Administrator</SelectItem>
-                    <SelectItem value="guest">Tamu</SelectItem>
+                    <SelectItem value="penduduk">Penduduk</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

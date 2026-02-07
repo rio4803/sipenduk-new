@@ -9,7 +9,7 @@ import { getPenggunaData } from "./actions"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 export default function PenggunaPage() {
-  const [pengguna, setPengguna] = useState([])
+  const [pengguna, setPengguna] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export default function PenggunaPage() {
 
   const columns = [
     {
-      accessorKey: "nama_pengguna",
+      accessorKey: "name",
       header: "Nama",
     },
     {
@@ -37,21 +37,21 @@ export default function PenggunaPage() {
       header: "Username",
     },
     {
-      accessorKey: "level",
-      header: "Level",
-      cell: ({ row }) => (
-        <div className={row.original.level === "admin" ? "text-blue-600 dark:text-blue-400" : ""}>
-          {row.original.level === "admin" ? "Administrator" : "Tamu"}
+      accessorKey: "role",
+      header: "Role",
+      cell: ({ row }:{ row: any }) => (
+        <div className={row.original.role == "admin" ? "text-blue-600 dark:text-blue-400" : ""}>
+          {row.original.role || "-"}
         </div>
       ),
     },
     {
       id: "actions",
       header: "Aksi",
-      cell: ({ row }) => (
+      cell: ({ row }: { row: any }) => (
         <div className="flex gap-2">
           <Button asChild size="sm" variant="outline">
-            <Link href={`/admin/pengguna/${row.original.id_pengguna}`}>Detail</Link>
+            <Link href={`/admin/pengguna/${row.original.id}`}>Detail</Link>
           </Button>
         </div>
       ),
@@ -87,7 +87,7 @@ export default function PenggunaPage() {
       <DataTableWrapper
         columns={columns}
         data={pengguna}
-        searchColumn="nama_pengguna"
+        searchColumn="name"
         searchPlaceholder="Cari berdasarkan nama..."
       />
     </div>

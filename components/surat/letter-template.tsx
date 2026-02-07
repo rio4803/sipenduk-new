@@ -1,7 +1,7 @@
 interface LetterTemplateProps {
   title: string
   nomor: string
-  tanggal: string
+  tanggal: string | null
   nama: string
   keterangan: string
 }
@@ -40,7 +40,7 @@ export function LetterTemplate({ title, nomor, tanggal, nama, keterangan }: Lett
       <div className="text-right mt-12">
         <p>BOGOR, {tanggal}</p>
         <p className="mb-20">KETUA RT 04</p>
-        <p className="font-bold">( rio nurfajri )</p>
+        <p className="font-bold">( Rio Nurfajri )</p>
       </div>
     </div>
   )

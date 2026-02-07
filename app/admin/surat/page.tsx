@@ -39,7 +39,7 @@ export default function SuratPage() {
     {
       accessorKey: "jenis_surat",
       header: "Jenis Surat",
-      cell: ({ row }) => {
+      cell: ({ row }: { row: any }) => {
         const jenis = row.original.jenis_surat
         let label = ""
 
@@ -73,12 +73,12 @@ export default function SuratPage() {
     {
       accessorKey: "tanggal_surat",
       header: "Tanggal Surat",
-      cell: ({ row }) => <div>{formatDate(row.original.tanggal_surat)}</div>,
+      cell: ({ row }: { row: any }) => <div>{formatDate(row.original.tanggal_surat)}</div>,
     },
     {
       id: "actions",
       header: "Aksi",
-      cell: ({ row }) => (
+      cell: ({ row }: { row: any }) => (
         <div className="flex gap-2">
           <Button asChild size="sm" variant="outline">
             <Link href={`/admin/surat/${row.original.jenis_surat}/${row.original.id}`}>

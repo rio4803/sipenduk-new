@@ -2,10 +2,10 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { createPengguna } from "../actions"
+import { notFound, useRouter } from "next/navigation"
+import { createPengguna, getPenggunaData} from "../actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FormStatus } from "@/components/form-status"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { InfoIcon } from "lucide-react"
+import { FormField } from "@/components/ui/form-field"
+import { getPendudukData } from "../../penduduk/actions"
+import { generateRandomPassword } from "@/lib/utils"
+import { useAuth } from "@/lib/auth-context"
 
 export default function TambahPenggunaPage() {
   const router = useRouter()
@@ -23,9 +27,26 @@ export default function TambahPenggunaPage() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null)
   const [generatePassword, setGeneratePassword] = useState(true)
   const [userCredentials, setUserCredentials] = useState<{ username: string; password: string } | null>(null)
+  const [penduduk, setPenduduk] = useState<any[]>([])
+  const {user} = useAuth()
+
+  useEffect(() => {
+    async function loadPenduduk() {
+      const pengguna = await getPenggunaData()
+      const penggunaId = pengguna.map(p => p.id_penduduk)
+      const pendudukData = await getPendudukData()
+      if(!pendudukData){
+        notFound()
+      }
+      setPenduduk(pendudukData.filter(p => p.status_penduduk == "Ada" && !penggunaId.includes(p.id)))
+    }
+
+    loadPenduduk()
+  }, [])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if(!user) return
     setIsPending(true)
     setError(null)
     setSuccess(null)
@@ -35,11 +56,11 @@ export default function TambahPenggunaPage() {
 
     // If generatePassword is true, remove password from formData
     if (generatePassword) {
-      formData.delete("password")
+      formData.set("password", generateRandomPassword(8))
     }
 
     try {
-      const result = await createPengguna(formData)
+      const result = await createPengguna(formData, user.id)
 
       if (result.error) {
         setError(result.error)
@@ -53,10 +74,6 @@ export default function TambahPenggunaPage() {
             password: result.data.password,
           })
         }
-        // Redirect setelah 2 detik
-        // setTimeout(() => {
-        //   router.push("/admin/pengguna")
-        // }, 2000)
       }
     } catch (err) {
       setError("Terjadi kesalahan. Silakan coba lagi.")
@@ -102,6 +119,20 @@ export default function TambahPenggunaPage() {
               </Alert>
             )}
 
+            <FormField id="id_pdd" label="Penduduk">
+              <Select name="id_pdd">
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih penduduk" />
+                </SelectTrigger>
+                <SelectContent>
+                  {penduduk.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nama} - {p.nik}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="nama_pengguna">Nama Lengkap</Label>
@@ -115,13 +146,13 @@ export default function TambahPenggunaPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="level">Level</Label>
-                <Select name="level" required>
+                <Select name="role" required>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih level" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="admin">Administrator</SelectItem>
-                    <SelectItem value="guest">Tamu</SelectItem>
+                    <SelectItem value="penduduk">Penduduk</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -136,6 +167,7 @@ export default function TambahPenggunaPage() {
                       checked={generatePassword}
                       onChange={() => setGeneratePassword(!generatePassword)}
                       className="rounded border-gray-300 text-primary focus:ring-primary"
+                      required
                     />
                     <Label htmlFor="generatePassword" className="text-sm font-normal">
                       Generate otomatis
@@ -156,12 +188,20 @@ export default function TambahPenggunaPage() {
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
-            <Button variant="outline" asChild>
-              <Link href="/admin/pengguna">Batal</Link>
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Menyimpan..." : "Simpan"}
-            </Button>
+            {success ? (
+              <Button asChild className="w-full">
+                <Link href="/admin/pengguna">Kembali ke Daftar Pengguna</Link>
+              </Button>
+            ): (
+              <>
+                <Button variant="outline" asChild>
+                  <Link href="/admin/pengguna">Batal</Link>
+                </Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? "Menyimpan..." : "Simpan"}
+                </Button>
+              </>
+            )}
           </CardFooter>
         </form>
       </Card>
