@@ -81,24 +81,6 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#2b5797" />
         <meta name="msapplication-tap-highlight" content="no" />
         <meta name="theme-color" content="#000000" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(
-                    function(registration) {
-                      console.log('Service Worker registered:', registration.scope);
-                    },
-                    function(err) {
-                      console.log('Service Worker registration failed:', err);
-                    }
-                  );
-                });
-              }
-            `,
-          }}
-        />
       </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>

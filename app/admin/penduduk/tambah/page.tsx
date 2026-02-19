@@ -9,12 +9,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FormStatus } from "@/components/form-status"
-import { DatePicker } from "@/components/ui/date-picker.tsx"
+import { DatePicker } from "@/components/ui/date-picker"
 import { FormField } from "@/components/ui/form-field"
 import { format } from "date-fns"
 import { getKKData, createPenduduk } from "../actions"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { InfoIcon } from "lucide-react"
+import { Label } from "@/components/ui/label"
 
 export default function TambahPendudukPage() {
   const router = useRouter()
@@ -24,8 +25,10 @@ export default function TambahPendudukPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null)
   const [userCredentials, setUserCredentials] = useState<{ username: string; password: string } | null>(null)
-
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+  const [kepalaKeluarga, setKepalaKeluarga] = useState<string>("0")
   const [birthDate, setBirthDate] = useState<any>(null)
+  const [isKepala, setIsKepala] = useState<boolean>(false)
 
   // LIST KEPALA KELUARGA
   const [kepalaKeluargaList, setKepalaKeluargaList] = useState<any[]>([])
@@ -54,10 +57,12 @@ export default function TambahPendudukPage() {
     rw: "",
     status_perkawinan: "",
     pekerjaan: "",
+    no_kk: "",
+    hubungan: "",
+    kec: "",
+    kab: "",
+    prov: ""
   })
-
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -86,9 +91,14 @@ export default function TambahPendudukPage() {
 
   const validateForm = () => {
     const errors: Record<string, string> = {}
-
-    if (!formData.id_kk) errors.id_kk = "Kepala keluarga wajib dipilih"
-
+    if(isKepala){
+      if(!formData.kec) errors.kec = "Isi data dengan benar"
+      if(!formData.kab) errors.kab = "Isi data dengan benar"
+      if(!formData.prov) errors.prov = "Isi data dengan benar"
+      if(!formData.no_kk) errors.no_kk = "Nomor KK wajib diisi"
+    }
+    if (!isKepala && !formData.id_kk) errors.id_kk = "Kepala keluarga wajib dipilih"
+    if (kepalaKeluarga != "0" && !isKepala && !formData.hubungan) errors.hubungan = "Hubungan wajib dipilih"
     if (!formData.nik) errors.nik = "NIK wajib diisi"
     else if (!/^\d{16}$/.test(formData.nik)) errors.nik = "NIK harus 16 digit angka"
 
@@ -104,20 +114,18 @@ export default function TambahPendudukPage() {
     if (!formData.pekerjaan) errors.pekerjaan = "Pekerjaan wajib diisi"
 
     setFormErrors(errors)
-    return Object.keys(errors).length === 0
+    return Object.keys(errors).length == 0
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setIsSubmitting(true);
-
+    e.preventDefault()
+    setIsPending(true);
     // VALIDASI
     if (!validateForm()) {
-      setIsSubmitting(false);
+      setIsPending(false);
       return;
     }
 
-    setIsPending(true);
     setError(null);
     setSuccess(null);
     setValidationErrors(null);
@@ -125,48 +133,29 @@ export default function TambahPendudukPage() {
 
     try {
       const formDataObj = new FormData(e.currentTarget);
-
       // Set nilai dari state manual
-      formDataObj.set("id_kk", formData.id_kk);
+      // formDataObj.set("id_kk", formData.id_kk);
       if (birthDate) {
         formDataObj.set("tanggal_lahir", format(birthDate, "yyyy-MM-dd"));
       }
 
       // Kirim ke server
-      const result = await createPenduduk(formDataObj);
+      const result = await createPenduduk(formDataObj)
 
       if (result.error) {
         setError(result.error);
         setValidationErrors(result.errors || null);
       } else if (result.success) {
         setSuccess("Data penduduk berhasil ditambahkan");
-
         if (result.user) {
           setUserCredentials(result.user);
         }
-
-        // Reset form
-        setFormData({
-          id_kk: "",
-          nik: "",
-          nama: "",
-          tempat_lahir: "",
-          jenis_kelamin: "",
-          agama: "",
-          desa: "",
-          rt: "",
-          rw: "",
-          status_perkawinan: "",
-          pekerjaan: "",
-        });
-        setBirthDate(null);
       }
     } catch (err) {
       console.error("Error creating penduduk:", err);
       setError("Terjadi kesalahan. Silakan coba lagi.");
     } finally {
-      setIsPending(false);
-      setIsSubmitting(false);
+      setIsPending(false)
     }
   }
 
@@ -178,7 +167,7 @@ export default function TambahPendudukPage() {
       </div>
 
       <Card className="hover:shadow-md transition-shadow">
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={(e) => handleSubmit(e)}>
           <CardHeader>
             <CardTitle>Data Penduduk</CardTitle>
             <CardDescription>Masukkan informasi penduduk baru</CardDescription>
@@ -208,28 +197,8 @@ export default function TambahPendudukPage() {
               </Alert>
             )}
 
-            {/* Dropdown Kepala Keluarga */}
-            <FormField id="id_kk" label="Kepala Keluarga" required error={formErrors.id_kk}>
-              <select
-                id="id_kk"
-                name="id_kk"
-                value={formData.id_kk}
-                onChange={handleInputChange}
-                className="border rounded px-3 py-2 w-full"
-              >
-                <option value="">Pilih Kepala Keluarga</option>
-
-                {kepalaKeluargaList.map((kk: any) => (
-                  <option key={kk.id} value={kk.id}>
-                    {kk.no_kk} - {kk.kepala}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-
             {/* Grid Input */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
               <FormField id="nik" label="NIK" required error={formErrors.nik}>
                 <Input
                   id="nik"
@@ -304,7 +273,7 @@ export default function TambahPendudukPage() {
                 </FormField>
               </div>
 
-              <FormField id="kawin" label="Status Perkawinan" required error={formErrors.kawin}>
+              <FormField id="kawin" label="Status Perkawinan" required error={formErrors.status_perkawinan}>
                 <Select
                   name="status_perkawinan"
                   value={formData.status_perkawinan}
@@ -326,6 +295,90 @@ export default function TambahPendudukPage() {
                 <Input id="pekerjaan" name="pekerjaan" value={formData.pekerjaan} onChange={handleInputChange} />
               </FormField>
             </div>
+
+            <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="is-kepala"
+              onChange={() => setIsKepala(prev => !prev)}
+              className="rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <Label htmlFor="is-kepala" className="text-sm font-normal">
+              Anda seorang kepala keluarga?
+            </Label>
+          </div>
+
+          {isKepala ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField id="no_kk" label="Nomor KK" required error={formErrors.no_kk}>
+                <Input name="no_kk" onChange={handleInputChange} />
+              </FormField>
+
+              <FormField id="kec" label="Kecamatan" required error={formErrors.kec}>
+                <Input name="kec" onChange={handleInputChange}/>
+              </FormField>
+
+              <FormField id="kab" label="Kabupaten" required error={formErrors.kab}>
+                <Input name="kab" onChange={handleInputChange}/>
+              </FormField>
+
+              <FormField id="prov" label="Provinsi" required error={formErrors.prov}>
+                <Input name="prov" onChange={handleInputChange}/>
+              </FormField>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <FormField id="id_kk" label="Kepala keluarga" required error={formErrors.id_kk}>
+                  <Select
+                    name="id_kk" 
+                    onValueChange={(val) => {
+                      setKepalaKeluarga(val)
+                      handleSelectChange("id_kk", val)
+                    }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih Kepala Keluarga" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={"0"}>Pilih Kepala Keluarga</SelectItem>
+                      {kepalaKeluargaList.map((kk: any) => (
+                        <SelectItem key={kk.id} value={kk.id}>
+                          {kk.no_kk} - {kk.kepala}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              </div>
+
+              <div className="space-y-2">
+                <FormField required label="Hubungan" error={formErrors.hubungan} id="hubungan">
+                  <Select 
+                    name="hubungan" 
+                    disabled={kepalaKeluarga == "0"}
+                    onValueChange={(val) => handleSelectChange("hubungan", val)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih hubungan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Kepala Keluarga">Kepala Keluarga</SelectItem>
+                      <SelectItem value="Istri">Istri</SelectItem>
+                      <SelectItem value="Suami">Suami</SelectItem>
+                      <SelectItem value="Anak">Anak</SelectItem>
+                      <SelectItem value="Menantu">Menantu</SelectItem>
+                      <SelectItem value="Cucu">Cucu</SelectItem>
+                      <SelectItem value="Orang Tua">Orang Tua</SelectItem>
+                      <SelectItem value="Mertua">Mertua</SelectItem>
+                      <SelectItem value="Famili Lain">Famili Lain</SelectItem>
+                      <SelectItem value="Pembantu">Pembantu</SelectItem>
+                      <SelectItem value="Lainnya">Lainnya</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              </div>
+            </>
+          )}
           </CardContent>
 
           <CardFooter className="flex justify-between">
@@ -346,7 +399,7 @@ export default function TambahPendudukPage() {
           )}
           </CardFooter>
 
-            
+          
         </form>
       </Card>
     </div>

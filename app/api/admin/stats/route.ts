@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import { getRedisKeys, getRedisData } from "@/lib/redis-service"
 import { supabase } from "@/app/utils/supabase"
 
 export async function GET() {

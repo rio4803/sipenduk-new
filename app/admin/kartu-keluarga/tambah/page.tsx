@@ -42,7 +42,7 @@ export default function TambahKartuKeluargaPage() {
     }
 
     try {
-      const result = await createKartuKeluarga(formData)
+      const result = await createKartuKeluarga(formData, user.id)
 
       if (result.error) {
         setError(result.error)

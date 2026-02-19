@@ -1,10 +1,7 @@
 "use server"
 
-import { getRedisData, getRedisKeys, setRedisData, deleteRedisData } from "@/lib/redis-service"
-import { revalidatePath } from "next/cache"
 import { sendPushNotificationToAll } from "@/lib/push-notification-server"
 import { supabase } from "@/app/utils/supabase"
-import { logActivity } from "@/lib/activity-logger"
 
 export interface Pengumuman {
   id_pengumuman: number
@@ -36,16 +33,16 @@ export async function getPengumumanData() {
   }
 }
 
-// Get pengumuman by ID
-export async function getPengumumanById(id: number) {
-  try {
-    const pengumuman = await getRedisData(`pengumuman:${id}`)
-    return pengumuman
-  } catch (error) {
-    console.error(`Error getting pengumuman with id ${id}:`, error)
-    return null
-  }
-}
+// // Get pengumuman by ID
+// export async function getPengumumanById(id: number) {
+//   try {
+//     const pengumuman = await getRedisData(`pengumuman:${id}`)
+//     return pengumuman
+//   } catch (error) {
+//     console.error(`Error getting pengumuman with id ${id}:`, error)
+//     return null
+//   }
+// }
 
 // Create pengumuman
 export async function createPengumuman(formData: FormData, userId: string, userName: string) {
@@ -89,37 +86,37 @@ export async function createPengumuman(formData: FormData, userId: string, userN
   }
 }
 
-// Update pengumuman
-export async function updatePengumuman(id: number, formData: FormData) {
-  try {
-    const pengumuman = await getRedisData(`pengumuman:${id}`)
+// // Update pengumuman
+// export async function updatePengumuman(id: number, formData: FormData) {
+//   try {
+//     const pengumuman = await getRedisData(`pengumuman:${id}`)
 
-    if (!pengumuman) {
-      return { error: "Pengumuman tidak ditemukan" }
-    }
+//     if (!pengumuman) {
+//       return { error: "Pengumuman tidak ditemukan" }
+//     }
 
-    const judul = formData.get("judul")?.toString()
-    const isi = formData.get("isi")?.toString()
+//     const judul = formData.get("judul")?.toString()
+//     const isi = formData.get("isi")?.toString()
 
-    if (!judul || !isi) {
-      return { error: "Judul dan isi pengumuman harus diisi" }
-    }
+//     if (!judul || !isi) {
+//       return { error: "Judul dan isi pengumuman harus diisi" }
+//     }
 
-    const updatedPengumuman = {
-      ...pengumuman,
-      judul,
-      isi,
-    }
+//     const updatedPengumuman = {
+//       ...pengumuman,
+//       judul,
+//       isi,
+//     }
 
-    await setRedisData(`pengumuman:${id}`, updatedPengumuman)
+//     await setRedisData(`pengumuman:${id}`, updatedPengumuman)
 
-    revalidatePath("/admin/pengumuman")
-    return { success: true, data: updatedPengumuman }
-  } catch (error) {
-    console.error("Error updating pengumuman:", error)
-    return { error: "Gagal memperbarui pengumuman" }
-  }
-}
+//     revalidatePath("/admin/pengumuman")
+//     return { success: true, data: updatedPengumuman }
+//   } catch (error) {
+//     console.error("Error updating pengumuman:", error)
+//     return { error: "Gagal memperbarui pengumuman" }
+//   }
+// }
 
 // Delete pengumuman
 export async function deletePengumuman(id: string) {

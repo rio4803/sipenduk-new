@@ -75,13 +75,13 @@ export async function getPendudukById(id: string) {
   try {
     const {data: penduduk, error: errPenduduk} = await supabase.from("penduduk").select("*").eq("id", id).single()
     if (!penduduk || errPenduduk) {
-      console.log(errPenduduk)
+      console.log({errPenduduk})
       return null
     }
     
     const {data: anggota, error: errAnggota} =  await supabase.from("anggota_kartu_keluarga").select("*, kartu_keluarga:id_kk (*)").eq("id_penduduk", id).single()
     if (errAnggota) {
-      console.log(errAnggota);
+      console.log({errAnggota});
     }
 
     return {
@@ -100,8 +100,13 @@ export async function getPendudukById(id: string) {
 // create penduduk baru
 // DONE
 export async function createPenduduk(formData: FormData) {
-  const id_kk = formData.get("id_kk")
 
+  const id_kk = formData.get("id_kk") || null
+  const hubungan = formData.get("hubungan") || "Kepala Keluarga"
+  const no_kk = formData.get("no_kk") || null
+  const kecamatan = formData.get("kec")
+  const kabupaten = formData.get("kab")
+  const provinsi = formData.get("prov")
   try {
     // validate form
     const validatedFields = pendudukSchema.safeParse({
@@ -124,6 +129,9 @@ export async function createPenduduk(formData: FormData) {
       }
     }
     
+    // console.log({id_kk, hubungan, no_kk, kecamatan, kabupaten, provinsi, ...validatedFields.data});
+    // return {error: "true"}
+
     // insert penduduk
     const {data: penduduk, error: errInsertPenduduk} = await supabase.from("penduduk").insert(validatedFields.data).select().single()
     if(errInsertPenduduk){
@@ -133,11 +141,38 @@ export async function createPenduduk(formData: FormData) {
       return { error: "terjadi masalah pada tabel penduduk" };
     }
     
-    // add penduduk to anggota kartu keluarga
-    const {error: errAddAnggota} = await supabase.from("anggota_kartu_keluarga").insert({id_penduduk: penduduk.id, id_kk})
-    if(errAddAnggota){
-      console.log(errAddAnggota)
-      return { error: "terjadi masalah pada tabel anggota" };
+    // tambahkan ke anggota keluarga jika penduduk merupakan anggota keluarga
+    if(id_kk){
+      const newAnggota = {
+        id_kk,
+        id_penduduk: penduduk.id,
+        hubungan
+      }
+      const {error: errAddAnggota} = await supabase.from("anggota_kartu_keluarga").insert(newAnggota)
+      if(errAddAnggota){
+        console.log(errAddAnggota)
+        return { error: "terjadi masalah pada tabel anggota" };
+      }
+    }
+
+    // tambah data kartu keluarga jika seorang kepala keluarga
+    if(no_kk){
+      const newKk = {
+        no_kk,
+        kepala: validatedFields.data.nama,
+        desa: validatedFields.data.desa,
+        rt: validatedFields.data.rt,
+        rw: validatedFields.data.rw,
+        kecamatan,
+        kabupaten,
+        provinsi
+      }
+      const {data: kk, error: errKk} = await supabase.from("kartu_keluarga").insert(newKk).select().single()
+      const {error: errAnggotaKepala} = await supabase.from("anggota_kartu_keluarga").insert({id_kk: kk.id, id_penduduk: penduduk.id, hubungan})
+      if(errKk || errAnggotaKepala){
+        console.log({errKk, errAnggotaKepala})
+        return {error: "Terjadi masalah"}
+      }
     }
 
     // buat akun penduduk

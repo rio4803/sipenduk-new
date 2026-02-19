@@ -70,20 +70,21 @@ const kedatanganSchema = z.object({
     error: () => ({ message: "Jenis kelamin harus dipilih" }),
   }),
   tanggal_kedatangan: z.string().min(1, "Tanggal datang harus diisi"),
-  id_pelapor: z.string().min(1, "Pelapor harus dipilih"),
 })
 
 // create kedatangan
 // DONE
 export async function createKedatangan(formData: FormData, user_id: string) {
   try {
+    const dataPendatang = JSON.parse(formData.get("data_pendatang") as string)
+    const anggota = JSON.parse(formData.get("anggota_keluarga") as string)
+
     // Validasi input
     const validatedFields = kedatanganSchema.safeParse({
-      nik: formData.get("nik"),
-      nama: formData.get("nama"),
-      jenis_kelamin: formData.get("jenis_kelamin"),
-      tanggal_kedatangan: formData.get("tanggal_kedatangan"),
-      id_pelapor: formData.get("pelapor"),
+      nik: dataPendatang.nik,
+      nama: dataPendatang.nama,
+      jenis_kelamin: dataPendatang.jenis_kelamin,
+      tanggal_kedatangan: dataPendatang.tanggal_datang,
     })
 
     if (!validatedFields.success) {
@@ -93,6 +94,12 @@ export async function createKedatangan(formData: FormData, user_id: string) {
       }
     }
 
+    if(dataPendatang.id_kk){
+      console.log("insert penduduk")
+    } else {
+      console.log("insert kk")
+    }
+    return {error: "true"}
     const penduduk = {
       nik: validatedFields.data.nik,
       nama: validatedFields.data.nama,

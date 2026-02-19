@@ -79,7 +79,7 @@ export async function getAnggotaKeluargaWithDetail(id: string) {
 
 // Fungsi untuk menambahkan kartu keluarga baru dengan auto-create penduduk kepala keluarga
 // DONE
-export async function createKartuKeluarga(formData: FormData) {
+export async function createKartuKeluarga(formData: FormData, user_id: string) {
   try {
     // generate uuid
     const id_kk = crypto.randomUUID()
@@ -160,6 +160,15 @@ export async function createKartuKeluarga(formData: FormData) {
     }
     const setHubungan = await supabase.from("anggota_kartu_keluarga").insert(newAnggota)
 
+
+    // log
+    await logActivity({
+      user_id,
+      type: "Kartu keluarga",
+      entity_type: "kartu_keluarga",
+      description: `Menambahkan kartu keluarga umtuk ${validatedFields.data.kepala}`
+    })
+
     return { 
       success: true, 
       akun: {
@@ -176,7 +185,7 @@ export async function createKartuKeluarga(formData: FormData) {
 
 // Fungsi untuk memperbarui data kartu keluarga
 // DONE
-export async function updateKartuKeluarga(id: string, formData: FormData) {
+export async function updateKartuKeluarga(id: string, formData: FormData, user_id: string) {
   try {
     // Validasi input
     const validatedFields = kartuKeluargaSchema.safeParse({
@@ -203,6 +212,14 @@ export async function updateKartuKeluarga(id: string, formData: FormData) {
       return { error: "Nomor KK sudah digunakan oleh kartu keluarga lain" }
     }
     
+    // log
+    await logActivity({
+      user_id,
+      type: "Kartu keluarga",
+      entity_type: "kartu_keluarga",
+      description: `Memperbarui kartu keluarga umtuk ${validatedFields.data.kepala}`
+    })
+
     return { success: true, data: validatedFields.data }
   } catch (error) {
     console.error("Error updating kartu keluarga:", error)
@@ -252,7 +269,6 @@ export async function addAnggotaKeluarga(formData: FormData) {
       console.log(addAnggota.error)
       return { error: "Terjadi masalah saat menambahkan anggota keluarga"}
     }
-    
     return { error: null}
   } catch (error) {
     console.error("Error adding anggota keluarga:", error)

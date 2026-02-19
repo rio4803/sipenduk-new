@@ -60,7 +60,7 @@ export default function EditKartuKeluargaPage({
     const formData = new FormData(e.currentTarget)
 
     try {
-      const result = await updateKartuKeluarga(id, formData)
+      const result = await updateKartuKeluarga(id, formData, user.id)
 
       if (result.error) {
         setError(result.error)

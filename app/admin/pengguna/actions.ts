@@ -1,8 +1,6 @@
 "use server"
 
-import { getRedisData, getRedisKeys, setRedisData, deleteRedisData } from "@/lib/redis-service"
-import { revalidatePath } from "next/cache"
-import { success, z } from "zod"
+import { z } from "zod"
 import { generateRandomPassword } from "@/lib/utils"
 import { supabase } from "@/app/utils/supabase"
 import { logActivity } from "@/lib/activity-logger"
@@ -52,7 +50,7 @@ export async function createPengguna(formData: FormData, user_id: string) {
     const validatedFields = penggunaSchema.safeParse({
       name: formData.get("nama_pengguna"),
       username: formData.get("username"),
-      password: formData.get("password"),
+      password: formData.get("password") || generateRandomPassword(8),
       role: formData.get("role"),
     })
 

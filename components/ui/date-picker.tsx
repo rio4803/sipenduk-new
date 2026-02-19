@@ -169,7 +169,7 @@ export function DatePicker({
   const handleClear = () => {
     setSelectedDate(undefined)
     if (onSelect) {
-      onSelect(undefined)
+      onSelect(null)
     }
     setOpen(false)
   }
@@ -199,7 +199,7 @@ export function DatePicker({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="">
       {id && <Label htmlFor={id} style={{display: "none"}}>{placeholder}</Label>}
       <Popover open={open && !disabled} onOpenChange={setOpen}>
         <PopoverTrigger asChild>

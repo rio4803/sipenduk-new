@@ -11,16 +11,72 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
+function normalizePayload(payload) {
+  const notif = payload?.notification || {};
+  const data = payload?.data || {};
+
+  return {
+    title: notif.title || data.title || "Notifikasi Baru",
+    body: notif.body || data.body || "Ada pengumuman baru",
+    icon: notif.icon || "/icon-192.png",
+    badge: data.badge || "/icon-192.png",
+    url: data.url || "/",
+    tag: data.tag || "sipenduk-fcm",
+    requireInteraction: data.requireInteraction === "true",
+  };
+}
 
 messaging.onBackgroundMessage((payload) => {
-  console.log("BG message", payload);
+  try {
+    console.log("[SW] Background message received:", payload);
 
-  const notificationTitle = payload.notification?.title || "Notifikasi";
-  const notificationOptions = {
-    body: payload.notification?.body,
-    icon: "/icon-192.png",
-  };
+    const notif = normalizePayload(payload);
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+    const options = {
+      body: notif.body,
+      icon: notif.icon,
+      badge: notif.badge,
+      data: {
+        url: notif.url,
+      },
+      tag: notif.tag,
+      renotify: true,
+      requireInteraction: notif.requireInteraction,
+      vibrate: [100, 50, 100],
+    };
+
+    self.registration.showNotification(notif.title, options);
+  } catch (err) {
+    console.error("[SW] Error handling background message:", err);
+  }
 });
 
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const targetUrl = event.notification?.data?.url || "/";
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(targetUrl) && "focus" in client) {
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow(targetUrl);
+        }
+      })
+  );
+});
+
+self.addEventListener("install", () => {
+  console.log("[SW] Installed");
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  console.log("[SW] Activated");
+  event.waitUntil(self.clients.claim());
+});

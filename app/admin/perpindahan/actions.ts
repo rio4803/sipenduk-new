@@ -1,8 +1,5 @@
 "use server"
 
-import { getRedisData, getRedisKeys, setRedisData, deleteRedisData } from "@/lib/redis-service"
-import { getPendudukById } from "@/lib/redis-helpers"
-import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { supabase } from "@/app/utils/supabase"
 import { logActivity } from "@/lib/activity-logger"

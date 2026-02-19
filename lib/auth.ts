@@ -92,26 +92,27 @@ export async function login(username: string, password: string): Promise<User | 
 export const loginUser = login
 
 // Add this function to validate a user session against the database
-// export async function validateUserById(userId: number): Promise<User | null> {
-//   if (!userId) return null
+export async function validateUserById(userId: string): Promise<User | null> {
+  if (!userId) return null
 
-//   try {
-//     // Check if user exists in database
-//     const dbUser = await getRedisData(`pengguna:${userId}`)
-//     if (!dbUser) return null
+  try {
+    const {data, error} = await supabase.from("pengguna").select("*").eq("id", userId).single()
+    if(error){
+      console.log(error)
+      return null
+    }
 
-//     // Return user object
-//     return {
-//       id: dbUser.id_pengguna,
-//       name: dbUser.nama_pengguna,
-//       username: dbUser.username,
-//       role: dbUser.level,
-//     }
-//   } catch (error) {
-//     console.error("Error validating user:", error)
-//     return null
-//   }
-// }
+    return {
+      id: data.id,
+      name: data.name,
+      username: data.username,
+      role: data.role,
+    }
+  } catch (error) {
+    console.error("Error validating user:", error)
+    return null
+  }
+}
 
 export async function getSession(): Promise<User | null> {
   // Pastikan kode ini hanya dijalankan di server
