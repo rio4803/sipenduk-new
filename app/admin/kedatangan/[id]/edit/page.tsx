@@ -16,6 +16,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { DatePicker } from "@/components/ui/date-picker"
 import { useAuth } from "@/lib/auth-context"
 import { getPendudukData } from "@/app/admin/penduduk/actions"
+import { createSurat } from "@/app/admin/surat/actions"
 
 export default function EditKedatanganPage({
   params,
@@ -65,24 +66,22 @@ export default function EditKedatanganPage({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!user) return
-
     setIsPending(true)
     setError(null)
     setSuccess(null)
     setValidationErrors(null)
-
+    
     const formData = new FormData(e.currentTarget)
     // Add the date from the DatePicker component
     if (arrivalDate) {
-      formData.set("tgl_datang", arrivalDate.toISOString().split("T")[0])
+      arrivalDate?.setHours(12,0,0,0)
+      formData.set("tanggal_kedatangan", arrivalDate.toISOString().split("T")[0])
     }
 
     try {
       const result = await updateKedatangan(id, formData, user.id)
-
       if (result.error) {
         setError(result.error)
-        setValidationErrors(result.errors || null)
       } else if (result.success) {
         setSuccess("Data kedatangan berhasil diperbarui")
         // Redirect setelah 2 detik
@@ -118,16 +117,17 @@ export default function EditKedatanganPage({
             <FormStatus error={error} success={success} errors={validationErrors} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+               <div className="space-y-2">
                 <Label htmlFor="nik">NIK</Label>
-                <Input id="nik" name="nik" defaultValue={kedatangan.nik} required />
+                <Input id="nik" disabled defaultValue={kedatangan.nik} required />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="nama_datang">Nama Lengkap</Label>
-                <Input id="nama_datang" name="nama_datang" defaultValue={kedatangan.nama_pendatang} required />
+                <Input id="nama_datang" disabled defaultValue={kedatangan.nama_pendatang} required />
               </div>
 
+              {/*
               <div className="space-y-2">
                 <Label htmlFor="jekel">Jenis Kelamin</Label>
                 <Select name="jekel" defaultValue={kedatangan.jenis_kelamin} required>
@@ -139,13 +139,13 @@ export default function EditKedatanganPage({
                     <SelectItem value="PR">Perempuan</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
 
               <div className="space-y-2">
                 <Label htmlFor="tgl_datang">Tanggal Datang</Label>
                 <DatePicker
                   id="tgl_datang"
-                  name="tgl_datang"
+                  name="tanggal_kedatangan"
                   selected={arrivalDate}
                   onSelect={setArrivalDate}
                 />
@@ -158,6 +158,7 @@ export default function EditKedatanganPage({
                     <SelectValue placeholder="Pilih pelapor" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem key={0} value={"0"}>Administrasi</SelectItem>
                     {penduduk.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.nama}

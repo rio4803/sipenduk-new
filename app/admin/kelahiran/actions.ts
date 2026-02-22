@@ -3,6 +3,7 @@
 import { z } from "zod"
 import { logActivity } from "@/lib/activity-logger"
 import { supabase } from "@/app/utils/supabase"
+import { createSurat } from "../surat/actions"
 
 
 // Schema validasi untuk kelahiran
@@ -25,7 +26,6 @@ export async function getKelahiranData() {
       return []
     }
     const dataKelahiran = arrayKelahiran.map(kelahiran => ({...kelahiran.penduduk, ...kelahiran.kartu_keluarga, id: kelahiran.id}))
-    console.log(dataKelahiran);
     return dataKelahiran
   } catch (error) {
     console.error("Error fetching kelahiran data:", error)
@@ -54,72 +54,45 @@ export async function getKelahiranById(id: string) {
 // create kelahiran
 // DONE
 export async function createKelahiran(formData: FormData, userId: string) {
-  try {
-    const id_kk = formData.get("id_kk")
-
-    // insert penduduk
-    const newUserData = {
-      nik: formData.get("nik") || null,
-      nama: formData.get("nama") || null,
-      tanggal_lahir: formData.get("tanggal_lahir") || null,
-      jenis_kelamin: formData.get("jenis_kelamin") || null,
-      tempat_lahir: formData.get("tempat_lahir") || null,
-      desa: formData.get("desa") || null,
-      rt: formData.get("rt") || null,
-      rw: formData.get("rw") || null,
-      agama: formData.get("agama") || null
-    }
-    const insertPenduduk = await supabase.from("penduduk").insert(newUserData).select().single()
-    if(insertPenduduk.error){
-      console.log(insertPenduduk.error)
-      if(insertPenduduk.error.code == "23505"){
-        return {error: "NIK telah terdaftar"}
-      }
-      return {error: "Terjadi masalah saat menambahkan penduduk"}
-    }
-    
-    // insert anggota
-    const anggota = {
-      id_penduduk: insertPenduduk.data.id,
-      id_kk,
-      hubungan: "Anak"
-    }
-    const insertAnggota = await supabase.from("anggota_kartu_keluarga").insert(anggota)
-    if(insertAnggota.error){
-      console.log(insertAnggota.error)
-      if(insertAnggota.error.code == "23505"){
-        return {error: "NIK telah terdaftar"}
-      }
-      return {error: "Terjadi masalah saat menambahkan anggota keluarga"}
-    }
-    
-    // insert kelahiran
-    const kelahiran = {
-      id_penduduk: insertPenduduk.data.id,
-      id_kk
-    }
-    const insertKelahiran = await supabase.from("kelahiran").insert(kelahiran)
-    if(insertKelahiran.error){
-      console.log(insertKelahiran.error)
-      if(insertKelahiran.error.code == "23505"){
-        return {error: "NIK telah terdaftar"}
-      }
-      return {error: "Terjadi masalah saat menambahkan data kelahiran"}
-    }
-
-    // Log
-    await logActivity({
-      user_id: userId,
-      type: "Kelahiran",
-      description: `Menambah data kelahiran ${newUserData.nama}`,
-      entity_type: "kelahiran"
-    })
-
-    return {success: "berhasil"}
-  } catch (err) {
-    console.error(err)
-    return { error: "Gagal menambahkan data kelahiran" }
+  /*
+    * insert penduduk
+    * insert anggota
+    * insert kelahiran
+    * new surat kelahiran
+  */
+  const dataKelahiran = JSON.parse(formData.get("data_kelahiran") as string)
+  const {data, error} = await supabase.rpc("insert_kelahiran", {
+    p_id_kk: dataKelahiran.id_kk,
+    p_nik: dataKelahiran.nik,
+    p_nama: dataKelahiran.nama,
+    p_tempat_lahir: dataKelahiran.tempat_lahir,
+    p_tanggal_lahir: dataKelahiran.tanggal_lahir,
+    p_jenis_kelamin: dataKelahiran.jenis_kelamin,
+    p_agama: dataKelahiran.agama,
+    p_hubungan: dataKelahiran.hubungan,
+    p_pekerjaan: dataKelahiran.pekerjaan,
+    p_status_perkawinan: dataKelahiran.status_perkawinan,
+    p_desa: dataKelahiran.desa,
+    p_rt: dataKelahiran.rt,
+    p_rw: dataKelahiran.rw,
+  })
+  if(error){
+    console.log({errKelahiran: error})
+    return {error: "Terjadi kesalahan"}
   }
+
+  formData.append("keterangan", "Surat keterangan kelahiran dan kependudukan baru")
+  formData.append("id_penduduk", data)
+  const surat = await createSurat(formData, userId, "kelahiran")
+  
+  await logActivity({
+    description: `Menambahkan data kelahiran ${dataKelahiran.nama}`,
+    user_id: userId,
+    entity_type: "kelahiran",
+    type: "Kelahiran"
+  })
+
+  return {success: "Data kelahiran berhasil ditambahkan"}
 }
 
 // update kelahiran

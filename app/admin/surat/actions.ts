@@ -68,13 +68,15 @@ export async function createSurat(formData: FormData, userId: string, jenisSurat
   try {
     // Get penduduk data
     const idPenduduk = formData.get("id_penduduk")
+    const now = new Date(Date.now())
+    const nomorSurat = `XX/XXXX/${now.getDate()}/${now.getFullYear()}`
 
     // Create surat data
     const suratData = {
       id_penduduk: idPenduduk,
       jenis_surat: jenisSurat,
-      nomor_surat: formData.get("nomor_surat"),
-      tanggal_surat: formData.get("tanggal_surat"),
+      nomor_surat: formData.get("nomor_surat") || nomorSurat,
+      tanggal_surat: formData.get("tanggal_surat") || now.toISOString().split("T")[0],
       keterangan: formData.get("keterangan"),
       created_by: userId,
     }

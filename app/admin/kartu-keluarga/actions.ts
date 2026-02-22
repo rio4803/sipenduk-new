@@ -80,100 +80,61 @@ export async function getAnggotaKeluargaWithDetail(id: string) {
 // Fungsi untuk menambahkan kartu keluarga baru dengan auto-create penduduk kepala keluarga
 // DONE
 export async function createKartuKeluarga(formData: FormData, user_id: string) {
+  /* 
+    * insert kk
+    * insert penduduk
+    * insert anggota (fk[id_kk, id_penduduk])
+    * insert pengguna (fk[id_penduduk])
+    * ------------------
+    * insert penduduk anggota
+    * insert anggota (fk[id_penduduk])
+  */
+
+
   try {
-    // generate uuid
-    const id_kk = crypto.randomUUID()
-    const id_penduduk = crypto.randomUUID()
 
-    // form validation
-    const validatedFields = kartuKeluargaSchema.safeParse({
-      no_kk: formData.get("no_kk"),
-      kepala: formData.get("kepala"),
-      desa: formData.get("desa"),
-      rt: formData.get("rt"),
-      rw: formData.get("rw"),
-      kecamatan: formData.get("kec"),
-      kabupaten: formData.get("kab"),
-      provinsi: formData.get("prov"),
+    const dataKepala = JSON.parse(formData.get("dataKepala") as string)
+    const dataAnggota = JSON.parse(formData.get("dataAnggota") as string)
+    const password = generateRandomPassword()
+    const {data: idPenduduk, error: errPenduduk} = await supabase.rpc("insert_kartu_keluarga", {
+      p_nik: dataKepala.nik,
+      p_nama: dataKepala.nama,
+      p_jenis_kelamin: dataKepala.jenis_kelamin,
+      p_tempat_lahir: dataKepala.tempat_lahir,
+      p_tanggal_lahir: dataKepala.tanggal_lahir,
+      p_agama: dataKepala.agama,
+      p_status_perkawinan: dataKepala.status_perkawinan,
+      p_hubungan: "Kepala keluarga",
+      p_pekerjaan: dataKepala.pekerjaan,
+      p_no_kk: dataKepala.no_kk,
+      p_desa: dataKepala.desa,
+      p_rt: dataKepala.rt,
+      p_rw: dataKepala.rw,
+      p_kabupaten: dataKepala.kabupaten,
+      p_kecamatan: dataKepala.kecamatan,
+      p_provinsi: dataKepala.provinsi,
+      p_username: dataKepala.nik,
+      p_password: password,
+      p_anggota: dataAnggota || null
     })
-    if(!validatedFields.success) {
-      return {
-        error: "Validasi gagal",
-        errors: validatedFields.error.flatten().fieldErrors,
-      }
+    if(errPenduduk){
+      console.log({errPenduduk})
+      return {error: "Terjadi kesalahan"}
     }
-
-    // insert kartu keluarga ke database
-    const insertKK = await supabase.from("kartu_keluarga").insert({
-      id: id_kk,
-      ...validatedFields.data
-    })
-    if(insertKK.error?.code == '23505'){
-      return { error: "Nomor KK sudah terdaftar" }
-    }
-
-    // AUTO-CREATE PENDUDUK UNTUK KEPALA KELUARGA
-    const nik_kepala = formData.get("nik_kepala")?.toString()
-    const tempat_lh_kepala = formData.get("tempat_lh_kepala")?.toString()
-    const tgl_lh_kepala = formData.get("tgl_lh_kepala")?.toString()
-    const jekel_kepala = formData.get("jekel_kepala")?.toString()
-    const agama_kepala = formData.get("agama_kepala")?.toString()
-    const kawin_kepala = formData.get("kawin_kepala")?.toString()
-    const pekerjaan_kepala = formData.get("pekerjaan_kepala")?.toString()
-
-    const newPenduduk = {
-      id: id_penduduk,
-      nik: nik_kepala || "",
-      nama: validatedFields.data.kepala,
-      tempat_lahir: tempat_lh_kepala || "-",
-      tanggal_lahir: tgl_lh_kepala || "",
-      jenis_kelamin: jekel_kepala || "LK",
-      desa: validatedFields.data.desa,
-      rt: validatedFields.data.rt,
-      rw: validatedFields.data.rw,
-      kecamatan: validatedFields.data.kecamatan,
-      kabupaten: validatedFields.data.kabupaten,
-      provinsi: validatedFields.data.provinsi,
-      agama: agama_kepala || "-",
-      status_perkawinan: kawin_kepala || "Kawin",
-      pekerjaan: pekerjaan_kepala || "-",
-      status_penduduk: "Ada" as const,
-    }
-    const {data: penduduk, error: errPenduduk} = await supabase.from("penduduk").insert(newPenduduk).select("id, nama").single()
-
-    // BUAT AKUN PENGGUNA OTOMATIS
-    const newUser = {
-      id_penduduk: penduduk?.id,
-      username: newPenduduk.nik,
-      password: generateRandomPassword(),
-      role: "penduduk",
-      name: newPenduduk.nama
-    }
-    const insertNewUser = await supabase.from("pengguna").insert(newUser)
-
-    
-    // LINK KEPALA KELUARGA TO KK AS "Suami"
-    const newAnggota = {
-      id_kk,
-      id_penduduk,
-      hubungan: newPenduduk.jenis_kelamin == "Perempuan" ? "Istri" : "Suami",
-    }
-    const setHubungan = await supabase.from("anggota_kartu_keluarga").insert(newAnggota)
-
 
     // log
     await logActivity({
       user_id,
       type: "Kartu keluarga",
       entity_type: "kartu_keluarga",
-      description: `Menambahkan kartu keluarga umtuk ${validatedFields.data.kepala}`
+      description: `Menambahkan kartu keluarga umtuk ${dataKepala.nama}`
     })
 
     return { 
       success: true, 
       akun: {
-        username: newUser.username,
-        password: newUser.password,
+        username: dataKepala.nik,
+        password: password,
         message: "Akun kepala keluarga berhasil dibuat"
       }
     }

@@ -56,9 +56,9 @@ export default function SuratPage() {
           case "perpindahan":
             label = "Surat Keterangan Perpindahan"
             break
-          case "domisili":
-            label = "Surat Keterangan Domisili"
-            break
+          // case "domisili":
+          //   label = "Surat Keterangan Domisili"
+          //   break
           default:
             label = jenis
         }
@@ -125,7 +125,7 @@ export default function SuratPage() {
           <TabsTrigger value="kelahiran">Kelahiran</TabsTrigger>
           <TabsTrigger value="kedatangan">Kedatangan</TabsTrigger>
           <TabsTrigger value="perpindahan">Perpindahan</TabsTrigger>
-          <TabsTrigger value="domisili">Domisili</TabsTrigger>
+          {/* <TabsTrigger value="domisili">Domisili</TabsTrigger> */}
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-0">

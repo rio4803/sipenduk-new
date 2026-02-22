@@ -26,12 +26,12 @@ export default function TambahPerpindahanPage() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null)
   const [penduduk, setPenduduk] = useState<any[]>([])
   const [isLoadingPenduduk, setIsLoadingPenduduk] = useState(true)
-  const [moveDate, setMoveDate] = useState<Date | null>(null)
   const {user} = useAuth()
   // Form validation state
   const [formData, setFormData] = useState({
-    id_pdd: "",
+    id_penduduk: "",
     alasan: "",
+    tanggal_pindah: null
   })
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
@@ -67,7 +67,7 @@ export default function TambahPerpindahanPage() {
   }
 
   // Handle select changes
-  const handleSelectChange = (name: string, value: string) => {
+  const handleSelectChange = (name: string, value: any) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
 
     // Clear error when user selects
@@ -84,9 +84,8 @@ export default function TambahPerpindahanPage() {
   const validateForm = () => {
     const errors: Record<string, string> = {}
 
-    if (!formData.id_pdd) errors.id_pdd = "Penduduk wajib dipilih"
-    if (!moveDate) errors.tgl_pindah = "Tanggal pindah wajib diisi"
-    if (!formData.alasan) errors.alasan = "Alasan wajib diisi"
+    if (!formData.id_penduduk) errors.id_penduduk = "Penduduk wajib dipilih"
+    if (!formData.tanggal_pindah) errors.tanggal_pindah = "Tanggal pindah wajib diisi"
 
     setFormErrors(errors)
     return Object.keys(errors).length === 0
@@ -105,18 +104,13 @@ export default function TambahPerpindahanPage() {
     setValidationErrors(null)
 
     const formDataObj = new FormData(e.currentTarget)
-
-    // Add the date from the DatePicker component
-    if (moveDate) {
-      formDataObj.set("tgl_pindah", moveDate.toISOString().split("T")[0])
-    }
+    formDataObj.append("data_perpindahan", JSON.stringify(formData))
 
     try {
       const result = await createPerpindahan(formDataObj, user.id)
 
       if (result.error) {
         setError(result.error)
-        setValidationErrors(result.errors || null)
       } else if (result.success) {
         setSuccess("Data perpindahan berhasil ditambahkan")
         // Redirect setelah 2 detik
@@ -152,13 +146,13 @@ export default function TambahPerpindahanPage() {
             <FormStatus error={error} success={success} errors={validationErrors} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField id="id_pdd" label="Penduduk" required error={formErrors.id_pdd}>
+              <FormField id="id_penduduk" label="Penduduk" required error={formErrors.id_penduduk}>
                 <Select
-                  name="id_pdd"
-                  value={formData.id_pdd}
-                  onValueChange={(value) => handleSelectChange("id_pdd", value)}
+                  name="id_penduduk"
+                  value={formData.id_penduduk}
+                  onValueChange={(value) => handleSelectChange("id_penduduk", value)}
                 >
-                  <SelectTrigger className={formErrors.id_pdd ? "border-red-500" : ""}>
+                  <SelectTrigger className={formErrors.id_penduduk ? "border-red-500" : ""}>
                     <SelectValue placeholder="Pilih penduduk" />
                   </SelectTrigger>
                   <SelectContent>
@@ -171,13 +165,11 @@ export default function TambahPerpindahanPage() {
                 </Select>
               </FormField>
 
-              <FormField id="tgl_pindah" label="Tanggal Pindah" required error={formErrors.tgl_pindah}>
+              <FormField id="tanggal_pindah" label="Tanggal Pindah" required error={formErrors.tanggal_pindah}>
                 <DatePicker
-                  id="tgl_pindah"
-                  name="tgl_pindah"
-                  selected={moveDate}
-                  onSelect={setMoveDate}
-                  error={formErrors.tgl_pindah}
+                  name="tanggal_pindah"
+                  selected={formData.tanggal_pindah}
+                  onSelect={(date) => handleSelectChange("tanggal_pindah", date)}
                 />
               </FormField>
 
@@ -190,7 +182,6 @@ export default function TambahPerpindahanPage() {
                   value={formData.alasan}
                   onChange={handleInputChange}
                   className={formErrors.alasan ? "border-red-500" : ""}
-                  required
                 />
                 {formErrors.alasan && <p className="text-sm font-medium text-red-500">{formErrors.alasan}</p>}
               </div>

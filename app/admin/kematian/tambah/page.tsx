@@ -9,13 +9,13 @@ import { createKematian } from "../actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { FormStatus } from "@/components/form-status"
 import { getPendudukData } from "../../penduduk/actions"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useAuth } from "@/lib/auth-context"
+import { FormField } from "@/components/ui/form-field"
 
 export default function TambahKematianPage() {
   const router = useRouter()
@@ -26,6 +26,12 @@ export default function TambahKematianPage() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null)
   const [penduduk, setPenduduk] = useState<any[]>([])
   const [isLoadingPenduduk, setIsLoadingPenduduk] = useState(true)
+  const [formErrors, setFormErrors] = useState<Record<string,string>>({})
+  const [formData, setFormData] = useState({
+    id_penduduk: "",
+    tanggal_kematian: null,
+    sebab_kematian: null,
+  })
 
   useEffect(() => {
     async function loadPenduduk() {
@@ -43,24 +49,60 @@ export default function TambahKematianPage() {
     loadPenduduk()
   }, [])
 
+  const validateForm = () => {
+    const errors: Record<string, string> = {
+      id_penduduk: !formData.id_penduduk ? "Penduduk wajib dipilih" : "",
+      tanggal_kematian: !formData.tanggal_kematian? "Tanggal kematian wajib diisi" : "", 
+    }
+    setFormErrors(errors)
+    return !Object.values(errors).some(Boolean);
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+
+    // Clear error when user types
+    if (formErrors[name]) {
+      setFormErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+    }
+  }
+
+  const handleSelectChange = (name: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [name]: value }))
+
+    // Clear error when user selects
+    if (formErrors[name]) {
+      setFormErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!user) return
+    if (!validateForm() || !user) return
 
     setIsPending(true)
     setError(null)
     setSuccess(null)
     setValidationErrors(null)
 
-    const formData = new FormData(e.currentTarget)
-    const namaPenduduk = penduduk.find(p => p.id == formData.get("id_pdd"))?.nama
-    formData.set("nama", namaPenduduk)
+    const formDataObj = new FormData(e.currentTarget)
+    const namaPenduduk = penduduk.find(p => p.id == formDataObj.get("id_pdd"))?.nama
+    formDataObj.append("nama", namaPenduduk)
+    formDataObj.append("data_kematian", JSON.stringify(formData))
     try {
-      const result = await createKematian(formData, user.id)
+      const result = await createKematian(formDataObj, user.id)
 
       if (result.error) {
         setError(result.error)
-        setValidationErrors(result.errors || null)
       } else if (result.success) {
         setSuccess("Data kematian berhasil ditambahkan")
         // Redirect setelah 2 detik
@@ -96,9 +138,8 @@ export default function TambahKematianPage() {
             <FormStatus error={error} success={success} errors={validationErrors} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="id_pdd">Penduduk</Label>
-                <Select name="id_pdd" required>
+              <FormField id="id_penduduk" label="Penduduk" required error={formErrors.id_penduduk}>
+                <Select name="id_penduduk" onValueChange={(val) => handleSelectChange("id_penduduk", val)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih penduduk" />
                   </SelectTrigger>
@@ -110,17 +151,15 @@ export default function TambahKematianPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="tgl_mendu">Tanggal Meninggal</Label>
-                <Input id="tgl_mendu" name="tgl_mendu" type="date" required />
-              </div>
+              <FormField id="tanggal_kematian" label="Tanggal Meninggal" required error={formErrors.tanggal_kematian}>
+                <Input name="tanggal_kematian" type="date" onChange={handleInputChange}/>
+              </FormField>
 
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="sebab">Sebab</Label>
-                <Textarea id="sebab" name="sebab" rows={3} required />
-              </div>
+              <FormField id="sebab_kematian" label="Sebab (Opsional)">
+                <Textarea name="sebab_kematian" rows={3} onVolumeChange={(val) => handleSelectChange("sebab_kematian", val)}/>
+              </FormField>
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">

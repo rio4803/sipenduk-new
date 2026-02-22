@@ -3,6 +3,7 @@
 import { z } from "zod"
 import { supabase } from "@/app/utils/supabase"
 import { logActivity } from "@/lib/activity-logger"
+import { createSurat, deleteSurat } from "../surat/actions"
 
 // read
 // DONE
@@ -56,63 +57,40 @@ const perpindahanSchema = z.object({
 // create
 // DONE
 export async function createPerpindahan(formData: FormData, user_id: string) {
-  try {
-    // Validasi input
-    const validatedFields = perpindahanSchema.safeParse({
-      id_penduduk: formData.get("id_pdd"),
-      tanggal_pindah: formData.get("tgl_pindah"),
-      alasan: formData.get("alasan"),
-    })
-
-    if (!validatedFields.success) {
-      return {
-        error: "Validasi gagal",
-        errors: validatedFields.error.flatten().fieldErrors,
-      }
-    }
-
-    const newPerpindahan = {
-      id_penduduk: validatedFields.data.id_penduduk,
-      tanggal_pindah: validatedFields.data.tanggal_pindah,
-      alasan: validatedFields.data.alasan,
-    }
-
-    const {error: errPindah} = await supabase.from("perpindahan").insert(newPerpindahan)
-    if(errPindah){
-      console.log(errPindah)
-      return {error: "Terjadi masalah saat menambahkan data perpindahan"}
-    }
-    
-    const {data: penduduk,error: errPenduduk} = await supabase.from("penduduk").update({status_penduduk: "Pindah"}).eq("id", validatedFields.data.id_penduduk).select("nama").single()
-    if(errPenduduk){
-      console.log(errPenduduk)
-      return {error: "Terjadi masalah saat memperbarui data penduduk"}
-    }
-    
-    const {error: errPengguna} = await supabase.from("pengguna").delete().eq("id_penduduk", validatedFields.data.id_penduduk)
-    if(errPengguna){
-      console.log(errPengguna)
-      return {error: "Terjadi masalah saat memperbarui data pengguna"}
-    }
-    
-    const {error: errAnggota} = await supabase.from("anggota_kartu_keluarga").delete().eq("id_penduduk", validatedFields.data.id_penduduk)
-    if(errAnggota){
-      console.log(errAnggota)
-    }
-
-    // log
-    await logActivity({
-      user_id,
-      type: "Perpindahan",
-      entity_type: "perpindahan",
-      description: `Menambahkan data perpindahan untuk ${penduduk.nama}`
-    })
-
-    return { success: true, data: newPerpindahan }
-  } catch (error) {
-    console.error("Error creating perpindahan:", error)
-    return { error: "Gagal menambahkan data perpindahan" }
+  /**
+   * insert perpindahan
+   * update status penduduk
+   * delete pengguna
+   * delete anggota_kartu_keluarga
+   */
+  
+  const dataPerpindahan = JSON.parse(formData.get("data_perpindahan") as string)
+  const {error} = await supabase.rpc("insert_perpindahan", {
+    p_id_penduduk: dataPerpindahan.id_penduduk,
+    p_alasan: dataPerpindahan.alasan,
+    p_tanggal_pindah: dataPerpindahan.tanggal_pindah
+  })
+  if(error){
+    console.log({errPerindahan:error})
+    return {error: "Terjadi masalah saat menambahkan data perpindahan"}
   }
+
+  formData.append("id_penduduk", dataPerpindahan.id_penduduk)
+  formData.append("keterangan", "Surat pernyataan perpindahan kependudukan")
+  const surat = await createSurat(formData, user_id, "perpindahan")
+
+  await logActivity({
+    description: `Menambahkan data perpindahan untuk ${formData.get("nama")}`,
+    entity_type: "perpindahan",
+    type: "Perpindahan",
+    user_id
+  })
+
+  return { success: true }
+  // } catch (error) {
+  //   console.error("Error creating perpindahan:", error)
+  //   return { error: "Gagal menambahkan data perpindahan" }
+  // }
 }
 
 export async function updatePerpindahan(id: string, formData: FormData, user_id: string) {

@@ -3,6 +3,8 @@
 import { z } from "zod"
 import { logActivity } from "@/lib/activity-logger"
 import { supabase } from "@/app/utils/supabase"
+import { error } from "console"
+import { createSurat } from "../surat/actions"
 
 // read kematian
 // DONE
@@ -53,28 +55,27 @@ const kematianSchema = z.object({
 // create kematian
 // DONE
 export async function createKematian(formData: FormData, userId: string) {
-  try {
-    // Validasi input
-    const validatedFields = kematianSchema.safeParse({
-      id_penduduk: formData.get("id_pdd"),
-      tanggal_kematian: formData.get("tgl_mendu"),
-      sebab_kematian: formData.get("sebab"),
-    })
+  /**
+   * insert kematian
+   * update status penduduk
+   * delete pengguna
+   */
+  const dataKematian = JSON.parse(formData.get("data_kematian") as string)
+  const {error} = await supabase.rpc("insert_kematian", {
+    p_id_penduduk: dataKematian.id_penduduk,
+    p_tanggal_kematian: dataKematian.tanggal_kematian,
+    p_sebab_kematian: dataKematian.sebab_kematian,
+  })
+  if(error){
+    console.log({errKematian: error})
+    return {error: "Terjadi kesalahan"}
+  }
 
-    if (!validatedFields.success) {
-      return {
-        error: "Validasi gagal",
-        errors: validatedFields.error.flatten().fieldErrors,
-      }
-    }
+  formData.append("id_penduduk", dataKematian.id_penduduk)
+  formData.append("keterangan", "Surat pernyataan kematian")
+  const surat = await createSurat(formData, userId, "kematian")
 
-    const {error: errInsertKematian} = await supabase.from("kematian").insert({...validatedFields.data})
-    const {error: errUpdateStatusPenduduk} = await supabase.from("penduduk").update({status_penduduk: "Meninggal"}).eq("id", validatedFields.data.id_penduduk)
-    if(errInsertKematian || errUpdateStatusPenduduk){
-      return {error: "terjadi masalah"}
-    }
-
-    // Log activity
+  //   // Log activity
     await logActivity({
       user_id: userId,
       type: "Kematian",
@@ -83,10 +84,6 @@ export async function createKematian(formData: FormData, userId: string) {
     })
 
     return { success: true }
-  } catch (error) {
-    console.error("Error creating kematian:", error)
-    return { error: "Gagal menambahkan data kematian" }
-  }
 }
 
 // update kematian

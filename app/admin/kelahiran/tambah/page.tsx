@@ -16,6 +16,7 @@ import { getKartuKeluargaData } from "../../kartu-keluarga/actions"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { DatePicker } from "@/components/ui/date-picker"
 import { useAuth } from "@/lib/auth-context"
+import { FormField } from "@/components/ui/form-field"
 
 export default function TambahKelahiranPage() {
   const router = useRouter()
@@ -26,7 +27,68 @@ export default function TambahKelahiranPage() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null)
   const [kartuKeluarga, setKartuKeluarga] = useState<any[]>([])
   const [isLoadingKK, setIsLoadingKK] = useState(true)
-  const [birthDate, setBirthDate] = useState<Date | null>(null)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+  const [formData, setFormData] = useState({
+    id_kk: "",
+    nik: "",
+    nama: "",
+    tempat_lahir: "",
+    tanggal_lahir: null,
+    jenis_kelamin: "",
+    agama: "",
+    hubungan: "Anak",
+    pekerjaan: "-",
+    status_perkawinan: "Belum Kawin",
+    desa: "",
+    rt: "",
+    rw: ""
+  })
+
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+
+    if (formErrors[name]) {
+      setFormErrors((prev) => {
+        const updated = { ...prev }
+        delete updated[name]
+        return updated
+      })
+    }
+  }
+
+  const handleSelectChange = (name: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [name]: value }))
+
+    if (formErrors[name]) {
+      setFormErrors((prev) => {
+        const updated = { ...prev }
+        delete updated[name]
+        return updated
+      })
+    }
+  }
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {}
+
+    if (!formData.nik) errors.nik = "NIK wajib diisi"
+    else if (!/^\d{16}$/.test(formData.nik)) errors.nik = "NIK harus 16 digit angka"
+    if (!formData.id_kk) errors.id_kk = "Keluarga wajib dipilih"
+    if (!formData.nama) errors.nama = "Nama wajib diisi"
+    if (!formData.tempat_lahir) errors.tempat_lahir = "Tempat lahir wajib diisi"
+    if (!formData.tanggal_lahir) errors.tanggal_lahir = "Tanggal lahir wajib diisi"
+    if (!formData.jenis_kelamin) errors.jenis_kelamin = "Jenis kelamin wajib diisi"
+    if (!formData.agama) errors.agama = "Agama wajib diisi"
+    if (!formData.desa) errors.desa = "Desa wajib diisi"
+    if (!formData.rt) errors.rt = "RT wajib diisi"
+    if (!formData.rw) errors.rw = "RW wajib diisi"
+
+    setFormErrors(errors)
+    return Object.keys(errors).length == 0
+  }
+
 
   useEffect(() => {
     async function loadKartuKeluarga() {
@@ -45,21 +107,18 @@ export default function TambahKelahiranPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!user) return
+    if (!validateForm()||!user) return
     setIsPending(true)
     setError(null)
     setSuccess(null)
     setValidationErrors(null)
 
-    const formData = new FormData(e.currentTarget)
-
+    const formDataObj = new FormData(e.currentTarget)
+    formDataObj.append("data_kelahiran", JSON.stringify(formData))
     // Add the date from the DatePicker component
-    if (birthDate) {
-      formData.set("tanggal_lahir", birthDate.toISOString().split("T")[0])
-    }
 
     try {
-      const result = await createKelahiran(formData, user.id)
+      const result = await createKelahiran(formDataObj, user.id)
 
       if (result.error) {
         setError(result.error)
@@ -117,38 +176,32 @@ export default function TambahKelahiranPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-              <div className="space-y-2">
-                <Label htmlFor="nik">NIK</Label>
-                <Input id="nik" name="nik" placeholder="Masukkan NIK" maxLength={16} />
-              </div>
+              <FormField id="nik" label="NIK" required error={formErrors.nik}>
+                <Input name="nik" placeholder="Masukkan NIK" maxLength={16} onChange={handleInputChange}/>
+              </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="nama">Nama</Label>
-                <Input id="nama" name="nama" required />
-              </div>
+              <FormField id="nama" label="Nama" required error={formErrors.nama}>
+                <Input name="nama" onChange={handleInputChange}/>
+              </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="tempat_lahir">Tempat Lahir</Label>
-                <Input id="tempat_lahir" name="tempat_lahir" placeholder="Masukkan tempat lahir" />
-              </div>
+              <FormField id="tempat_lahir" label="Tempat Lahir" required error={formErrors.tempat_lahir}>
+                <Input name="tempat_lahir" placeholder="Masukkan tempat lahir" onChange={handleInputChange}/>
+              </FormField>
 
               {/* ✅ PERBAIKAN DI SINI – DatePicker full width + match input height */}
-              <div className="space-y-2">
-                <Label htmlFor="tanggal_lahir">Tanggal Lahir</Label>
+              <FormField id="tanggal_lahir" label="Tanggal Lahir" required error={formErrors.tanggal_lahir}>
                 <div className="w-full">
                   <DatePicker
-                    id="tanggal_lahir"
                     name="tanggal_lahir"
-                    selected={birthDate}
-                    onSelect={setBirthDate}
+                    selected={formData.tanggal_lahir}
+                    onSelect={(date) => handleSelectChange("tanggal_lahir", date)}
                     className="w-full"
                   />
                 </div>
-              </div>
+              </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="jenis_kelamin">Jenis Kelamin</Label>
-                <Select name="jenis_kelamin" required>
+              <FormField id="jenis_kelamin" label="Jenis Kelamin" required error={formErrors.jenis_kelamin}>
+                <Select name="jenis_kelamin" onValueChange={(val) => handleSelectChange("jenis_kelamin", val)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih jenis kelamin" />
                   </SelectTrigger>
@@ -157,11 +210,10 @@ export default function TambahKelahiranPage() {
                     <SelectItem value="PR">Perempuan</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="id_kk">Kartu Keluarga</Label>
-                <Select name="id_kk" required>
+              <FormField id="id_kk" label="Kartu Keluarga" required error={formErrors.id_kk}>
+                <Select name="id_kk" onValueChange={(val) => handleSelectChange("id_kk", val)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih kartu keluarga" />
                   </SelectTrigger>
@@ -173,11 +225,10 @@ export default function TambahKelahiranPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="agama">Agama</Label>
-                <Select name="agama">
+              <FormField id="agama" label="Agama" required error={formErrors.agama}>
+                <Select name="agama" onValueChange={(val) => handleSelectChange("agama", val)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih agama" />
                   </SelectTrigger>
@@ -190,22 +241,19 @@ export default function TambahKelahiranPage() {
                     <SelectItem value="Konghucu">Konghucu</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="desa">Desa</Label>
-                <Input id="desa" name="desa" placeholder="Masukkan nama desa" />
-              </div>
+              <FormField id="desa" label="Desa" required error={formErrors.desa}>
+                <Input name="desa" placeholder="Masukkan nama desa" onChange={handleInputChange}/>
+              </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="rt">RT</Label>
-                <Input id="rt" name="rt" placeholder="RT" />
-              </div>
+              <FormField id="rt" label="RT" required error={formErrors.rt}>
+                <Input name="rt" placeholder="RT" onChange={handleInputChange}/>
+              </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="rw">RW</Label>
-                <Input id="rw" name="rw" placeholder="RW" />
-              </div>
+              <FormField id="rw" label="RW" required error={formErrors.rw}>
+                <Input name="rw" placeholder="RW" onChange={handleInputChange}/>
+              </FormField>
 
             </div>
           </CardContent>

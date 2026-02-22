@@ -3,6 +3,8 @@
 import { z } from "zod";
 import { supabase } from "@/app/utils/supabase";
 import { generateRandomPassword } from "@/lib/utils";
+import { STATIC_STATUS_PAGE_GET_INITIAL_PROPS_ERROR } from "next/dist/lib/constants";
+import { logActivity } from "@/lib/activity-logger";
 
 // validation schema
 const pendudukSchema = z.object({
@@ -99,98 +101,43 @@ export async function getPendudukById(id: string) {
 
 // create penduduk baru
 // DONE
-export async function createPenduduk(formData: FormData) {
-
-  const id_kk = formData.get("id_kk") || null
-  const hubungan = formData.get("hubungan") || "Kepala Keluarga"
-  const no_kk = formData.get("no_kk") || null
-  const kecamatan = formData.get("kec")
-  const kabupaten = formData.get("kab")
-  const provinsi = formData.get("prov")
+export async function createPenduduk(formData: FormData, user_id: string) {
+  const dataPenduduk = JSON.parse(formData.get("data_penduduk") as string)
+  const password = generateRandomPassword(8)
   try {
-    // validate form
-    const validatedFields = pendudukSchema.safeParse({
-      nik: formData.get("nik"),
-      nama: formData.get("nama"),
-      tempat_lahir: formData.get("tempat_lahir"),
-      tanggal_lahir: formData.get("tanggal_lahir"),
-      jenis_kelamin: formData.get("jenis_kelamin"),
-      desa: formData.get("desa"),
-      rt: formData.get("rt"),
-      rw: formData.get("rw"),
-      agama: formData.get("agama"),
-      status_perkawinan: formData.get("status_perkawinan"),
-      pekerjaan: formData.get("pekerjaan"),
+    const {data, error} = await supabase.rpc("insert_penduduk", {
+      p_id_kk: dataPenduduk.id_kk,
+      p_nik: dataPenduduk.nik,
+      p_nama: dataPenduduk.nama,
+      p_tempat_lahir: dataPenduduk.tempat_lahir,
+      p_jenis_kelamin: dataPenduduk.jenis_kelamin,
+      p_tanggal_lahir: dataPenduduk.tanggal_lahir,
+      p_agama: dataPenduduk.agama,
+      p_desa: dataPenduduk.desa,
+      p_rt: dataPenduduk.rt,
+      p_rw: dataPenduduk.rw,
+      p_status_perkawinan: dataPenduduk.status_perkawinan,
+      p_pekerjaan: dataPenduduk.pekerjaan,
+      p_hubungan: dataPenduduk.hubungan,
+      p_username: dataPenduduk.nik,
+      p_password: password
     })
-    if (!validatedFields.success) {
-      return {
-        error: "Validasi gagal",
-        errors: validatedFields.error.flatten().fieldErrors,
-      }
-    }
-    
-    // console.log({id_kk, hubungan, no_kk, kecamatan, kabupaten, provinsi, ...validatedFields.data});
-    // return {error: "true"}
-
-    // insert penduduk
-    const {data: penduduk, error: errInsertPenduduk} = await supabase.from("penduduk").insert(validatedFields.data).select().single()
-    if(errInsertPenduduk){
-      if(errInsertPenduduk.code == "23505"){
-        return { error: "NIK sudah terdaftar" };
-      }
-      return { error: "terjadi masalah pada tabel penduduk" };
-    }
-    
-    // tambahkan ke anggota keluarga jika penduduk merupakan anggota keluarga
-    if(id_kk){
-      const newAnggota = {
-        id_kk,
-        id_penduduk: penduduk.id,
-        hubungan
-      }
-      const {error: errAddAnggota} = await supabase.from("anggota_kartu_keluarga").insert(newAnggota)
-      if(errAddAnggota){
-        console.log(errAddAnggota)
-        return { error: "terjadi masalah pada tabel anggota" };
-      }
+    if(error){
+      console.log({errPenduduk: error})
+      return {error: "Terjadi kesalahan"}
     }
 
-    // tambah data kartu keluarga jika seorang kepala keluarga
-    if(no_kk){
-      const newKk = {
-        no_kk,
-        kepala: validatedFields.data.nama,
-        desa: validatedFields.data.desa,
-        rt: validatedFields.data.rt,
-        rw: validatedFields.data.rw,
-        kecamatan,
-        kabupaten,
-        provinsi
-      }
-      const {data: kk, error: errKk} = await supabase.from("kartu_keluarga").insert(newKk).select().single()
-      const {error: errAnggotaKepala} = await supabase.from("anggota_kartu_keluarga").insert({id_kk: kk.id, id_penduduk: penduduk.id, hubungan})
-      if(errKk || errAnggotaKepala){
-        console.log({errKk, errAnggotaKepala})
-        return {error: "Terjadi masalah"}
-      }
-    }
-
-    // buat akun penduduk
-    const password = generateRandomPassword(8)
-    const newUser = {
-      id_penduduk: penduduk.id,
-      name: validatedFields.data.nama,
-      username: validatedFields.data.nik,
-      password: password,
-      role: "penduduk" as const,
-    }
-    await supabase.from("pengguna").insert(newUser)
+    await logActivity({
+      description: `Menambah data penduduk untuk ${dataPenduduk.nama}`,
+      entity_type: "penduduk",
+      type: "Penduduk",
+      user_id
+    })
 
     return {
       success: true,
-      data: validatedFields.data,
       user: {
-        username: newUser.username,
+        username: dataPenduduk.nik,
         password: password,
       },
     }

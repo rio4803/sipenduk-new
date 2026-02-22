@@ -3,6 +3,7 @@
 import { supabase } from "@/app/utils/supabase"
 import { logActivity } from "@/lib/activity-logger"
 import z from "zod"
+import { createSurat } from "../surat/actions"
 
 // read kedatangan
 // DONE
@@ -16,7 +17,7 @@ export async function getKedatanganData() {
     
     const kedatangan = dataKedatangan.map(k => {
       const newObj = {
-        nama_pelapor: k.pelapor.nama,
+        nama_pelapor: k.pelapor?.nama || "Administrasi",
         nik: k.penduduk.nik,
         nama_pendatang: k.penduduk.nama,
         jenis_kelamin: k.penduduk.jenis_kelamin,
@@ -48,7 +49,7 @@ export async function getKedatanganById(id: string) {
     }
     
     const kedatangan = {
-      nama_pelapor: data.pelapor.nama,
+      nama_pelapor: data.pelapor?.nama || "Administrasi",
       nik: data.penduduk.nik,
       nama_pendatang: data.penduduk.nama,
       jenis_kelamin: data.penduduk.jenis_kelamin,
@@ -77,7 +78,8 @@ const kedatanganSchema = z.object({
 export async function createKedatangan(formData: FormData, user_id: string) {
   try {
     const dataPendatang = JSON.parse(formData.get("data_pendatang") as string)
-    const anggota = JSON.parse(formData.get("anggota_keluarga") as string)
+    const dataAnggota = JSON.parse(formData.get("anggota_keluarga") as string)
+    formData.append("keterangan", `Surat kedatangan dan kependudukan baru`)
 
     // Validasi input
     const validatedFields = kedatanganSchema.safeParse({
@@ -94,51 +96,46 @@ export async function createKedatangan(formData: FormData, user_id: string) {
       }
     }
 
-    if(dataPendatang.id_kk){
-      console.log("insert penduduk")
-    } else {
-      console.log("insert kk")
-    }
-    return {error: "true"}
-    const penduduk = {
-      nik: validatedFields.data.nik,
-      nama: validatedFields.data.nama,
-      jenis_kelamin: validatedFields.data.jenis_kelamin
-    }
-    const {data: newPenduduk, error: errNewPenduduk} = await supabase.from("penduduk").insert(penduduk).select().single()
-    if(errNewPenduduk && errNewPenduduk.code == "23505"){
-      return {error: "NIK Sudah terdaftar"}
-    } else if (errNewPenduduk && errNewPenduduk.code != "23505") {
-      console.log(errNewPenduduk)
+    const password = generateRandomPassword()
+    const {data: idPenduduk, error: errPenduduk} = await supabase.rpc("insert_kedatangan", {
+      p_id_kk: dataPendatang.id_kk || null,
+      p_nik: dataPendatang.nik,
+      p_nama: dataPendatang.nama,
+      p_jenis_kelamin: dataPendatang.jenis_kelamin,
+      p_tempat_lahir: dataPendatang.tempat_lahir,
+      p_tanggal_lahir: dataPendatang.tanggal_lahir,
+      p_tanggal_datang: dataPendatang.tanggal_datang,
+      p_agama: dataPendatang.agama,
+      p_status_perkawinan: dataPendatang.status_perkawinan,
+      p_hubungan: dataPendatang.hubungan,
+      p_pekerjaan: dataPendatang.pekerjaan,
+      p_pelapor: dataPendatang.pelapor || null,
+      p_no_kk: dataPendatang.no_kk,
+      p_desa: dataPendatang.desa,
+      p_rt: dataPendatang.rt,
+      p_rw: dataPendatang.rw,
+      p_kabupaten: dataPendatang.kabupaten,
+      p_kecamatan: dataPendatang.kecamatan,
+      p_provinsi: dataPendatang.provinsi,
+      p_username: dataPendatang.nik,
+      p_password: password,
+      p_anggota: dataAnggota || null
+    })
+    if(errPenduduk){
+      console.log(errPenduduk)
+      return {error: "Terjadi masalah saat membuat data kedatangan"}
     }
 
-    const id_kk = formData.get("id_kk") || null
-    if(id_kk){
-      const {error: errAnggota} = await supabase.from("anggota_kartu_keluarga").insert({id_penduduk: newPenduduk.id, id_kk}).select().single()
-      if(errAnggota){
-        console.log(errAnggota);
-        return {error: "Terjadi masalah saat menambahkan anggota"}
-      }
-    }
-    
-    const kedatangan = {
-      id_penduduk: newPenduduk.id,
-      id_kk,
-      id_pelapor: validatedFields.data.id_pelapor,
-      tanggal_kedatangan: validatedFields.data.tanggal_kedatangan
-    }
-    const {error: errKedatangan} = await supabase.from("kedatangan").insert(kedatangan)
-    if(errKedatangan){
-      console.log(errKedatangan);
-      return {error: "Terjadi masalah saat menambahkan kedatangan"}
-    }
-    
-    const username = validatedFields.data.nik
-    const password = generateRandomPassword()
-    const {error: errPengguna} = await supabase.from("pengguna").insert({username, password, id_penduduk: newPenduduk.id, name: newPenduduk.nama})
-    if(errPengguna){
-      console.log(errPengguna);
-      return {error: "Terjadi masalah saat menambahkan Pengguna"}
+    Object.entries({
+      id_penduduk: idPenduduk,
+      keterangan: "Kami yang bertandatangan dibawah ini mengajukan kependudukan baru",
+    }).forEach(([key, value]) => {
+      formData.append(key, value)
+    })
+
+    const surat = await createSurat(formData, user_id, "kedatangan")
+    if(surat.error){
+      return {error: surat.error}
     }
 
     // log
@@ -146,13 +143,14 @@ export async function createKedatangan(formData: FormData, user_id: string) {
       user_id,
       type: "Kedatangan",
       entity_type: "kedatangan",
-      description: `Menambahkan data kedatangan untuk ${newPenduduk.nama}`
+      description: `Menambahkan data kedatangan untuk ${dataPendatang.nama}`
     })
 
     return {
       success: true,
       akun : {
-        username, password,
+        username: dataPendatang.nik,
+        password,
         message: "Akun berhasil dibuat"
       }
     }
@@ -169,39 +167,13 @@ function generateRandomPassword() {
 
 export async function updateKedatangan(id: string, formData: FormData, user_id: string) {
   try {
-    // Validasi input
-    const validatedFields = kedatanganSchema.safeParse({
-      nik: formData.get("nik"),
-      nama: formData.get("nama_datang"),
-      jenis_kelamin: formData.get("jekel"),
-      tanggal_kedatangan: formData.get("tgl_datang"),
-      id_pelapor: formData.get("pelapor"),
-    })
-
-    if (!validatedFields.success) {
-      return {
-        error: "Validasi gagal",
-        errors: validatedFields.error.flatten().fieldErrors,
-      }
+    const id_pelapor = formData.get("pelapor")
+    const pendatang = {
+      tanggal_kedatangan: formData.get("tanggal_kedatangan"),
+      id_pelapor: id_pelapor == "0" ? null : id_pelapor
     }
 
-    const penduduk = {
-      nik: validatedFields.data.nik,
-      nama: validatedFields.data.nama,
-      jenis_kelamin: validatedFields.data.jenis_kelamin
-    }
-    const {data: newPenduduk, error: errNewPenduduk} = await supabase.from("penduduk").update(penduduk).eq("id", id).select().single()
-    if(errNewPenduduk && errNewPenduduk.code == "23505"){
-      return {error: "NIK Sudah terdaftar"}
-    } else if (errNewPenduduk && errNewPenduduk.code != "23505") {
-      console.log(errNewPenduduk)
-    }
-
-    const kedatangan = {
-      id_pelapor: validatedFields.data.id_pelapor,
-      tanggal_kedatangan: validatedFields.data.tanggal_kedatangan
-    }
-    const {error: errKedatangan} = await supabase.from("kedatangan").update(kedatangan).eq("id", id)
+    const {error: errKedatangan} = await supabase.from("kedatangan").update(pendatang).eq("id", id)
     if(errKedatangan){
       console.log(errKedatangan);
       return {error: "Terjadi masalah saat menambahkan kedatangan"}

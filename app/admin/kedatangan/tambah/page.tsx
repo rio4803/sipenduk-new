@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { createKedatangan } from "../actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -151,6 +150,7 @@ export default function TambahKedatanganPage() {
         if(!anggota.status_perkawinan_anggota) errors[`status_perkawinan_anggota-${i}`] = "Status perkawinan anggota wajib diisi"
         if(!anggota.agama_anggota) errors[`agama_anggota-${i}`] = "Agama anggota wajib diisi"
         if(!anggota.pekerjaan_anggota) errors[`pekerjaan_anggota-${i}`] = "Pekerjaan anggota wajib diisi"
+        if(!anggota.hubungan) errors[`hubungan-${i}`] = "Hubungan wajib diisi"
       })
     }
 
@@ -169,14 +169,13 @@ export default function TambahKedatanganPage() {
     
     const formDataObj = new FormData(e.currentTarget)
     formDataObj.append("data_pendatang", JSON.stringify({...formData, hubungan: isKepala? "Kepala Keluarga" : formData.hubungan}))
-
     if(fdAnggota.length > 0){
       formDataObj.append("anggota_keluarga", JSON.stringify(fdAnggota))
     }
 
     try {
-      const result = await createKedatangan(formDataObj, user.id)
 
+      const result = await createKedatangan(formDataObj, user.id)
       if (result.error) {
         setError(result.error)
         // setValidationErrors(result.errors || null)
@@ -473,7 +472,31 @@ export default function TambahKedatanganPage() {
                         </SelectContent>
                       </Select>
                     </FormField>
-    
+
+                    <FormField required label="Hubungan" error={formErrors[`hubungan-${i}`]} id="hubungan">
+                      <Select 
+                        defaultValue={anggota.hubungan}
+                        onValueChange={(val) => handleFdAnggotaInput("hubungan", val, i)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih hubungan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Kepala Keluarga">Kepala Keluarga</SelectItem>
+                          <SelectItem value="Istri">Istri</SelectItem>
+                          <SelectItem value="Suami">Suami</SelectItem>
+                          <SelectItem value="Anak">Anak</SelectItem>
+                          <SelectItem value="Menantu">Menantu</SelectItem>
+                          <SelectItem value="Cucu">Cucu</SelectItem>
+                          <SelectItem value="Orang Tua">Orang Tua</SelectItem>
+                          <SelectItem value="Mertua">Mertua</SelectItem>
+                          <SelectItem value="Famili Lain">Famili Lain</SelectItem>
+                          <SelectItem value="Pembantu">Pembantu</SelectItem>
+                          <SelectItem value="Lainnya">Lainnya</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormField>
+                    
                     <FormField id={`pekerjaan_anggota-${i}`} label="Pekerjaan" required error={formErrors[`pekerjaan_anggota-${i}`]}>
                       <Input onChange={(e) => handleFdAnggotaInput("pekerjaan_anggota", e.target.value, i)} value={anggota.pekerjaan_anggota}/>
                     </FormField>
@@ -482,14 +505,15 @@ export default function TambahKedatanganPage() {
               ))}
 
               <Button type="button" onClick={() => setFdAnggota(prev => [...prev, {
-                nama_anggota: "",
-                nik_anggota: "",
-                tempat_lahir_anggota: "",
-                tanggal_lahir_anggota: "",
-                jenis_kelamin_anggota: "",
-                agama_anggota: "",
-                pekerjaan_anggota: "",
-                status_perkawinan_anggota: "",
+                nama_anggota              : "",
+                nik_anggota               : "",
+                tempat_lahir_anggota      : "",
+                tanggal_lahir_anggota     : "",
+                jenis_kelamin_anggota     : "",
+                agama_anggota             : "",
+                pekerjaan_anggota         : "",
+                status_perkawinan_anggota : "",
+                hubungan                  : ""
               }])}>+ Tambah anggota</Button>
             </>
             ) : (
