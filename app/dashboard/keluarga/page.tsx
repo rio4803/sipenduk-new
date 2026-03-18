@@ -107,7 +107,6 @@ export default function KeluargaPage() {
                         <th className="text-left py-2 px-4">Tempat/Tgl Lahir</th>
                         <th className="text-left py-2 px-4">Hubungan</th>
                         <th className="text-left py-2 px-4">Agama</th>
-                        <th className="text-left py-2 px-4">Pendidikan</th>
                         <th className="text-left py-2 px-4">Pekerjaan</th>
                         <th className="text-left py-2 px-4">Status</th>
                       </tr>
@@ -123,7 +122,6 @@ export default function KeluargaPage() {
                           </td>
                           <td className="py-2 px-4">{anggota.hubungan}</td>
                           <td className="py-2 px-4">{anggota.agama}</td>
-                          <td className="py-2 px-4">-</td>
                           <td className="py-2 px-4">{anggota.pekerjaan}</td>
                           <td className="py-2 px-4">{anggota.status_penduduk}</td>
                         </tr>

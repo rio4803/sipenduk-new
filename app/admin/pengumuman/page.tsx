@@ -51,6 +51,7 @@ export default function PengumumanPage() {
         body: JSON.stringify({
           title: pengumuman.judul,
           body: pengumuman.isi.substring(0, 100) + (pengumuman.isi.length > 100 ? "..." : ""),
+          target: pengumuman.kepada,
           data: {
             url: "/dashboard/notifikasi",
             pengumumanId: pengumuman.id,
@@ -61,7 +62,7 @@ export default function PengumumanPage() {
       const result = await response.json()
       
       if (result.success) {
-        alert(`Notifikasi berhasil dikirim ke semua pengguna`)
+        alert(`Notifikasi berhasil dikirim`)
       } else {
         alert("Gagal mengirim notifikasi: " + result.error)
       }
@@ -114,7 +115,7 @@ export default function PengumumanPage() {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
-                      {" · "}oleh {pengumuman.username}
+                      {" · "}oleh {pengumuman.username} untuk {pengumuman.tujuan?.name || "Semua"}
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const {data: anggotaPengguna, error: errAnggotaPengguna} = await supabase.from("anggota_kartu_keluarga").select("*, penduduk:id_penduduk(*), kartu_keluarga:id_kk(*)").eq("id_penduduk", pengguna.id_penduduk).single()
     if(errAnggotaPengguna) {console.log({errAnggotaPengguna}); return NextResponse.json({error: "Terjadi gangguan"})}
     
-    const {data: anggotaData, error: errAnggotaData} = await supabase.from("anggota_kartu_keluarga").select("penduduk:id_penduduk(*)").eq("id_kk", anggotaPengguna.id_kk)
+    const {data: anggotaData, error: errAnggotaData} = await supabase.from("anggota_kartu_keluarga").select("*, penduduk:id_penduduk(*)").eq("id_kk", anggotaPengguna.id_kk)
     if(errAnggotaPengguna) {console.log({errAnggotaData}); return NextResponse.json({error: "Terjadi gangguan"})}
 
     const {data: dataKelahiran, error: errKelahiran} = await supabase.from("kelahiran").select("id, penduduk:id_penduduk(nama, tanggal_lahir, jenis_kelamin)").eq("id_kk", anggotaPengguna.id_kk)
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       kelahiran: kelahiran,
       anggotaKeluarga: anggota,
     }
-
+    console.log(dataPengguna);
     return NextResponse.json(dataPengguna)
   } catch (error) {
     console.error("Error fetching keluarga detail data:", error)

@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/app/utils/supabase"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const {data: pengumumanList, error} = await supabase.from("pengumuman").select("*")
+    const userId = request.nextUrl.searchParams.get("userId")
+    const {data: pengumumanList, error} = await supabase.from("pengumuman").select("*").or(`kepada.eq.${userId}, kepada.is.null`)
     if(error){
       console.log(error)
       return NextResponse.json({error: "terjadi kesalahan notifikasi"})

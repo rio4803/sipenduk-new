@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Token is required" }, { status: 400 })
     }
     
-    const {error} = await supabase.from("push_subscriptions").insert({user_id,token})
+    const {error} = await supabase.from("push_subscriptions").insert({user_id, token})
     if(error){
       if(error.code == "23505"){
         const {error} = await supabase.from("push_subscriptions").update({token}).eq("id", user_id)

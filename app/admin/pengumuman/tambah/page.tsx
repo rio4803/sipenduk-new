@@ -1,17 +1,19 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createPengumuman } from "../actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { FormStatus } from "@/components/form-status"
 import { useAuth } from "@/lib/auth-context"
+import { FormField } from "@/components/ui/form-field"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { getPenggunaData } from "../../pengguna/actions"
 
 export default function TambahPengumumanPage() {
   const router = useRouter()
@@ -19,6 +21,17 @@ export default function TambahPengumumanPage() {
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [pengguna, setPengguna] = useState<any[]>()
+
+  useEffect(() => {
+    async function loadPengguna() {
+      const penggunaData = await getPenggunaData()
+      setPengguna(penggunaData)
+    }
+
+    loadPengguna()
+  }, [])
+
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -64,26 +77,34 @@ export default function TambahPengumumanPage() {
           <CardContent className="space-y-4">
             <FormStatus error={error} success={success} />
 
-            <div className="space-y-2">
-              <Label htmlFor="judul">Judul Pengumuman</Label>
+            <FormField id="tujuan" label="Tujuan" required>
+              <Select name="tujuan">
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih Tujuan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua</SelectItem>
+                  {pengguna && pengguna.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            <FormField id="judul" label="Judul Pengumuman" required>
               <Input
-                id="judul"
                 name="judul"
                 placeholder="Masukkan judul pengumuman"
-                required
               />
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <Label htmlFor="isi">Isi Pengumuman</Label>
+            <FormField id="isi" label="Isi Pengumuman" required>
               <Textarea
-                id="isi"
                 name="isi"
                 placeholder="Masukkan isi pengumuman"
                 rows={8}
-                required
               />
-            </div>
+            </FormField>
           </CardContent>
           <CardFooter className="flex justify-between">
             <Button variant="outline" asChild>

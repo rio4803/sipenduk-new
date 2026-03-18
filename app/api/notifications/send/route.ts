@@ -11,27 +11,50 @@ export async function POST(request: NextRequest) {
     if (!title || !messageBody) {
       return NextResponse.json({ error: "Title and body are required" }, { status: 400 })
     }
+    // console.log(body);
 
-    const {data: subs, error} = await supabase.from("push_subscriptions").select("token")
-    if(error){
-      console.log(error)
-      return NextResponse.json({error:"terjadi masalah"})
+    if(!body.target){
+      const {data: subs, error} = await supabase.from("push_subscriptions").select("token")
+      if(error){
+        console.log(error)
+        return NextResponse.json({error:"terjadi masalah"})
+      }
+      const message = {
+        notification: {
+          title,
+          body: messageBody,
+        },
+        tokens: subs.map(s => s.token)
+      }
+      console.log(message);
+      const response = await sendPush(message)
+    } 
+    else {
+      const {data: subs, error} = await supabase.from("push_subscriptions").select("token").eq("user_id", body.target)
+      if(error){
+        console.log(error)
+        return NextResponse.json({error:"terjadi masalah"})
+      }
+      const message = {
+        notification: {
+          title,
+          body: messageBody,
+        },
+        tokens: subs.map(s => s.token)
+      }
+      console.log(message);
+      const response = await sendPush(message)
     }
 
-    const message = {
-      notification: {
-        title,
-        body: messageBody,
-      },
-      tokens: subs.map(s => s.token)
-    }
-    const response = await sendPush(message)
-    console.log(response)
     return NextResponse.json({
       success: true,
       message: `Notification sent`
     })
   } catch (error) {
     console.error("Error sending notification:", error)
+    return NextResponse.json({
+      success: false,
+      message: `send notification problem`
+    })
   }
 }

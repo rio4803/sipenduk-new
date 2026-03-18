@@ -1,6 +1,6 @@
 "use server"
 
-import { sendPushNotificationToAll } from "@/lib/push-notification-server"
+import { sendNotificationToUser, sendPushNotificationToAll } from "@/lib/push-notification-server"
 import { supabase } from "@/app/utils/supabase"
 
 export interface Pengumuman {
@@ -15,7 +15,7 @@ export interface Pengumuman {
 // Get all pengumuman
 export async function getPengumumanData() {
   try {
-    const {data, error} = await supabase.from("pengumuman").select("*, pengguna:penulis(username)").order("created_at", {ascending: true})
+    const {data, error} = await supabase.from("pengumuman").select("*, pengguna:penulis(username), tujuan:kepada(name)").order("created_at", {ascending: true})
     if(error){
       console.log(error)
       return []
@@ -25,6 +25,7 @@ export async function getPengumumanData() {
       delete newObj.pengguna
       return newObj
     })
+    console.log(pengumuman)
     return pengumuman
 
   } catch (error) {
@@ -49,6 +50,7 @@ export async function createPengumuman(formData: FormData, userId: string, userN
   try {
     const judul = formData.get("judul")?.toString()
     const isi = formData.get("isi")?.toString()
+    const tujuan = formData.get("tujuan")?.toString() || null
 
     if (!judul || !isi) {
       return { error: "Judul dan isi pengumuman harus diisi" }
@@ -58,7 +60,8 @@ export async function createPengumuman(formData: FormData, userId: string, userN
       judul,
       isi,
       tanggal: new Date().toISOString(),
-      penulis: userId
+      penulis: userId,
+      kepada: tujuan == "all" ? null : tujuan
     }
 
     const {error} = await supabase.from("pengumuman").insert(newPengumuman)
@@ -68,17 +71,24 @@ export async function createPengumuman(formData: FormData, userId: string, userN
     }
 
     // Send push notification
-    try {
-      await sendPushNotificationToAll({
-        title: `Pengumuman Baru: ${judul}`,
-        body: isi.length > 50 ? `${isi.substring(0, 50)}...` : isi,
-        data: { url: "/dashboard/notifikasi" } // Redirect to notification/dashboard page
-      })
-    } catch (pushError) {
-      console.error("Failed to send push notification:", pushError)
-      return {error: "Something wen't wrong"}
-    }
-
+    // try {
+    //   if(tujuan != "all"){
+    //     await sendNotificationToUser({
+    //       title: `Pengumuman Baru: ${judul}`,
+    //       body: isi.length > 50 ? `${isi.substring(0, 50)}...` : isi,
+    //       data: { url: "/dashboard/notifikasi" },
+    //     }, tujuan)
+    //   } else {
+    //     await sendPushNotificationToAll({
+    //       title: `Pengumuman Baru: ${judul}`,
+    //       body: isi.length > 50 ? `${isi.substring(0, 50)}...` : isi,
+    //       data: { url: "/dashboard/notifikasi" } // Redirect to notification/dashboard page
+    //     })
+    //   }
+    // } catch (pushError) {
+    //   console.error("Failed to send push notification:", pushError)
+    //   return {error: "Something wen't wrong"}
+    // }
     return { success: true }
   } catch (error) {
     console.error("Error creating pengumuman:", error)

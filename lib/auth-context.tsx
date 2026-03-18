@@ -26,16 +26,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()
 
   useEffect(() => {
-    // Check if user data exists in localStorage
-    const storedUser = localStorage.getItem("user")
-    if (storedUser) {
-      try {
+    async function validateUser(){
+      const storedUser = localStorage.getItem("user")
+      if(storedUser){
         setUser(JSON.parse(storedUser))
-      } catch (error) {
-        console.error("Failed to parse user data:", error)
-        localStorage.removeItem("user")
+        const validate = await fetch("/api/auth/validate", {
+          method: "POST",
+          body: storedUser
+        })
+        const result = await validate.json()
+        if(result.valid){
+          setUser(JSON.parse(storedUser))
+        } else {
+          localStorage.removeItem("user")
+        }
       }
     }
+    
+
+    validateUser()
     setIsLoading(false)
   }, [])
 

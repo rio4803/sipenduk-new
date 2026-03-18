@@ -114,19 +114,3 @@ export async function validateUserById(userId: string): Promise<User | null> {
   }
 }
 
-export async function getSession(): Promise<User | null> {
-  // Pastikan kode ini hanya dijalankan di server
-  if (typeof window !== "undefined") {
-    throw new Error("This function can only be used on the server")
-  }
-
-  try {
-    // This function is kept for backward compatibility
-    // but no longer uses cookies
-    return null
-  } catch (error) {
-    console.error("Error getting session:", error)
-    return null
-  }
-}
-
