@@ -32,7 +32,7 @@ export default function KeluargaPage() {
 
         // --- Sorting urutan keluarga ---
         const order = {
-          Suami: 1,
+          "Kepala keluarga": 1,
           Istri: 2,
           Anak: 3,
         }
