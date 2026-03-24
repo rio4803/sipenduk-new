@@ -39,8 +39,20 @@ export default function DetailKartuKeluargaPage({
           notFound()
         }
 
+        const order = {
+          "Kepala keluarga": 1,
+          Istri: 2,
+          Anak: 3,
+        }
+
+        const sortedAnggota = [...anggotaData].sort((a, b) => {
+          const orderA = order[a.hubungan as keyof typeof order] || 99
+          const orderB = order[b.hubungan as keyof typeof order] || 99
+          return orderA - orderB
+        })
+
         setKK(kkData)
-        setAnggota(anggotaData)
+        setAnggota(sortedAnggota)
       } catch (error) {
         console.error("Error loading kartu keluarga data:", error)
         setError("Gagal memuat data kartu keluarga")
