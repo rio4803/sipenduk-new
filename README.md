@@ -13,10 +13,11 @@ SIPENDUK menggunakan arsitektur berbasis *web application* dengan teknologi *mod
 ![Arsitektur Sistem](graphs/images/arsitektur-sistem-sipenduk.svg)  
 
 Komponen utama sistem:  
-- **Frontend**: Dibangun dengan *Next.js* untuk memberikan pengalaman pengguna yang interaktif dan cepat.  
+- **Frontend**: Dibangun dengan *Next.js 15* untuk memberikan pengalaman pengguna yang interaktif dan cepat.  
 - **Backend**: Menggunakan API berbasis *Next.js App Router* untuk menangani logika bisnis dan pemrosesan data.  
-- **Database**: Memanfaatkan *Redis* sebagai penyimpanan utama untuk performa tinggi.  
-- **Autentikasi & Otorisasi**: Menggunakan *NextAuth.js* untuk manajemen pengguna dengan akses berbasis peran.  
+- **Database Utama**: Memanfaatkan *Supabase (PostgreSQL)* untuk penyimpanan data relasional kependudukan terstruktur secara andal.  
+- **Penyimpanan Notifikasi**: Menggunakan *Redis* untuk menyimpan data notifikasi secara real-time.  
+- **Autentikasi & Otorisasi**: Menggunakan custom JWT (cookie-based) untuk manajemen akses pengguna berdasarkan peran.  
 
 ---
 
@@ -86,11 +87,29 @@ Diagram ini menggambarkan bagaimana pengguna berinteraksi dengan sistem dari log
 
 | Teknologi       | Keterangan |
 |----------------|-----------|
-| **Next.js 14** | Framework frontend & backend berbasis React dengan *App Router*. |
-| **Redis** | Database NoSQL yang cepat untuk penyimpanan data kependudukan. |
+| **Next.js 15** | Framework frontend & backend berbasis React dengan *App Router*. |
+| **Supabase** | Database PostgreSQL utama untuk penyimpanan data kependudukan. |
+| **Redis** | Penyimpanan data sementara/cache untuk sistem notifikasi. |
 | **Tailwind CSS** | Framework CSS untuk tampilan antarmuka yang modern dan responsif. |
 | **shadcn/ui** | Library UI berbasis Radix untuk komponen antarmuka. |
 | **TypeScript** | Bahasa pemrograman dengan dukungan tipe statis untuk meningkatkan keandalan kode. |
+
+---
+
+## **6. Konfigurasi Environment Variables (.env)**
+
+Untuk menjalankan proyek ini secara lokal atau di deployment (seperti Vercel), konfigurasi variabel berikut di file `.env` atau `.env.local`:
+
+| Nama Variabel | Wajib/Opsional | Keterangan |
+|---|---|---|
+| **`SUPABASE_URL`** | Wajib | URL Endpoint dari project Supabase Anda. |
+| **`SUPABASE_SERVICE_ROLE_KEY`** | Wajib | Service Role Key dari Supabase (digunakan untuk bypass RLS di backend secara aman). |
+| **`JWT_SECRET`** | Wajib | Kunci rahasia acak untuk mengenkripsi token JWT sesi pengguna. |
+| **`REDIS_URL`** | Wajib | URL koneksi ke Redis database (misal: dari Upstash Redis) untuk fitur notifikasi. |
+| **`NEXT_PUBLIC_FCM_VAPID_KEY`** | Wajib | VAPID Key dari Firebase Cloud Messaging untuk token notifikasi client. |
+| **`FIREBASE_SERVICE_ACCOUNT`** | Wajib | String JSON dari Firebase Service Account untuk otorisasi FCM di backend. |
+| **`APP_NAME`** / **`NEXT_PUBLIC_APP_NAME`** | Opsional | Nama aplikasi yang ditampilkan di header dan judul halaman. |
+| **`NEXT_PUBLIC_APP_URL`** | Opsional | Domain URL aplikasi (untuk sitemap dan metadata). |
 
 ---
 

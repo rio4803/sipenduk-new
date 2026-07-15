@@ -90,10 +90,6 @@ export const adminNavItems = [
     href: "/admin/pengumuman",
     icon: <Bell className="mr-2 h-4 w-4" />,
   }, 
-  {
-    title: "Database Manager",
-    href: "/admin/database",
-    icon: <Database className="mr-2 h-4 w-4" />,
-  },
 ]
+
 

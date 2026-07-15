@@ -6,7 +6,7 @@ import { notFound, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PDFExport } from "@/components/pdf-export"
+import { KKPdfExport } from "@/components/kk-pdf-export"
 import {
   getKartuKeluargaById,
   getAnggotaKeluargaWithDetail,
@@ -127,7 +127,7 @@ export default function DetailKartuKeluargaPage({
           <p className="text-muted-foreground">Informasi detail kartu keluarga</p>
         </div>
         <div className="flex gap-2">
-          <PDFExport elementId="kk-data" fileName={`kk-${kk.no_kk}`} />
+          <KKPdfExport kk={kk} anggota={anggota} />
           <Button asChild variant="outline">
             <Link href={`/admin/kartu-keluarga/${id}/edit`}>Edit</Link>
           </Button>
