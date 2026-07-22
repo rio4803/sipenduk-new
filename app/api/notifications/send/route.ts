@@ -46,12 +46,27 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    const relativeUrl = fcmData.url || "/dashboard/notifikasi"
+    const origin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
+    const fullUrl = relativeUrl.startsWith("http") ? relativeUrl : `${origin}${relativeUrl}`
+
     const message = {
       notification: {
         title,
         body: messageBody,
       },
       data: fcmData,
+      webpush: {
+        fcm_options: {
+          link: fullUrl,
+        },
+        notification: {
+          title,
+          body: messageBody,
+          icon: "/icon-192.png",
+          badge: "/icon-192.png",
+        },
+      },
       tokens: subs.map((s) => s.token),
     }
 

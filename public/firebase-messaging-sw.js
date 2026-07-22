@@ -61,7 +61,8 @@ self.addEventListener("notificationclick", (event) => {
   // If user clicked "Tutup", do nothing
   if (event.action === "dismiss") return;
 
-  const targetUrl = event.notification?.data?.url || "/dashboard/notifikasi";
+  const rawUrl = event.notification?.data?.url || "/dashboard/notifikasi";
+  const targetUrl = rawUrl.startsWith("http") ? rawUrl : new URL(rawUrl, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true })
@@ -76,7 +77,7 @@ self.addEventListener("notificationclick", (event) => {
             return;
           }
         }
-        // If no matching tab is open, open a new window
+        // If no matching tab is open, open a new window with absolute URL
         if (clients.openWindow) {
           return clients.openWindow(targetUrl);
         }
