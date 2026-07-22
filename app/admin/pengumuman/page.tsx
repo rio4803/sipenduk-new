@@ -53,8 +53,8 @@ export default function PengumumanPage() {
           body: pengumuman.isi.substring(0, 100) + (pengumuman.isi.length > 100 ? "..." : ""),
           target: pengumuman.kepada,
           data: {
-            url: "/dashboard/notifikasi",
-            pengumumanId: pengumuman.id,
+            url: `/dashboard/notifikasi/${pengumuman.id}`,
+            pengumumanId: String(pengumuman.id),
           },
         }),
       })

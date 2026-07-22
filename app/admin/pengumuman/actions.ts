@@ -64,7 +64,7 @@ export async function createPengumuman(formData: FormData, userId: string, userN
       kepada: tujuan == "all" ? null : tujuan
     }
 
-    const {error} = await supabase.from("pengumuman").insert(newPengumuman)
+    const { data: insertedData, error } = await supabase.from("pengumuman").insert(newPengumuman).select("id").single()
     if(error){
       console.log(error)
       return {error: "Terjadi kesalahan saat membuat pengumuman baru"}
@@ -72,11 +72,15 @@ export async function createPengumuman(formData: FormData, userId: string, userN
 
     // Auto-send push notification to target
     try {
+      const targetUrl = insertedData?.id ? `/dashboard/notifikasi/${insertedData.id}` : "/dashboard/notifikasi"
       const pushPayload = {
         title: `Pengumuman Baru: ${judul}`,
         body: isi.length > 50 ? `${isi.substring(0, 50)}...` : isi,
         target: tujuan == "all" ? undefined : tujuan,
-        data: { url: "/dashboard/notifikasi" },
+        data: {
+          url: targetUrl,
+          pengumumanId: insertedData?.id ? String(insertedData.id) : undefined,
+        },
       }
 
       await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/notifications/send`, {

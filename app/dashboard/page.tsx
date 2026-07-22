@@ -282,18 +282,22 @@ export default function DashboardPage() {
             <div className="space-y-4">
               {notifications.length > 0 ? (
                 notifications.map((notification) => (
-                  <div key={notification.id} className="flex items-start space-x-2 pb-3 border-b last:border-0">
+                  <Link
+                    key={notification.id}
+                    href={`/dashboard/notifikasi/${notification.id}`}
+                    className="flex items-start space-x-2 pb-3 border-b last:border-0 hover:bg-muted/50 p-2 rounded-md transition-colors"
+                  >
                     <Bell
-                      className={`h-5 w-5 mt-0.5 ${notification.read ? "text-muted-foreground" : "text-primary"}`}
+                      className={`h-5 w-5 mt-0.5 flex-shrink-0 ${notification.read ? "text-muted-foreground" : "text-primary"}`}
                     />
-                    <div>
-                      <p className="font-medium">{notification.title}</p>
-                      <p className="text-sm text-muted-foreground">{notification.message}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium hover:underline">{notification.title}</p>
+                      <p className="text-sm text-muted-foreground truncate">{notification.message}</p>
                       <p className="text-xs text-muted-foreground">
                         {formatDate(notification.created_at)} ({formatRelativeTime(notification.created_at)})
                       </p>
                     </div>
-                  </div>
+                  </Link>
                 ))
               ) : (
                 <p className="text-center text-muted-foreground">Tidak ada notifikasi</p>

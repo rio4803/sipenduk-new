@@ -66,11 +66,17 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
+        // Try to find an existing window/tab matching origin
         for (const client of clientList) {
-          if (client.url.includes(targetUrl) && "focus" in client) {
-            return client.focus();
+          if ("focus" in client) {
+            client.focus();
+            if ("navigate" in client) {
+              return client.navigate(targetUrl);
+            }
+            return;
           }
         }
+        // If no matching tab is open, open a new window
         if (clients.openWindow) {
           return clients.openWindow(targetUrl);
         }
