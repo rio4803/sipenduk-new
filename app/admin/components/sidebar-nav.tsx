@@ -81,6 +81,11 @@ export const adminNavItems = [
     icon: <Mail className="mr-2 h-4 w-4" />,
   },
   {
+    title: "Template Surat",
+    href: "/admin/surat/template",
+    icon: <FileText className="mr-2 h-4 w-4" />,
+  },
+  {
     title: "Pengguna",
     href: "/admin/pengguna",
     icon: <Users className="mr-2 h-4 w-4" />,

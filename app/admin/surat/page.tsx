@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { DataTableWrapper } from "@/components/ui/data-table-wrapper"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { formatDate } from "@/lib/utils"
-import { Plus, FileText, Printer } from "lucide-react"
+import { Plus, FileText, Printer, Settings } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getAllSurat } from "./actions"
@@ -56,14 +56,14 @@ export default function SuratPage() {
           case "perpindahan":
             label = "Surat Keterangan Perpindahan"
             break
-          // case "domisili":
-          //   label = "Surat Keterangan Domisili"
-          //   break
+          case "domisili":
+            label = "Surat Keterangan Domisili"
+            break
           default:
-            label = jenis
+            label = "Surat Keterangan"
         }
 
-        return <div>{label}</div>
+        return <div className="font-medium">{label}</div>
       },
     },
     {
@@ -77,21 +77,23 @@ export default function SuratPage() {
     },
     {
       id: "actions",
-      header: "Aksi",
-      cell: ({ row }: { row: any }) => (
-        <div className="flex gap-2">
-          <Button asChild size="sm" variant="outline">
-            <Link href={`/admin/surat/${row.original.jenis_surat}/${row.original.id}`}>
-              <FileText className="h-4 w-4 mr-1" /> Detail
-            </Link>
-          </Button>
-          <Button asChild size="sm" variant="outline">
-            <Link href={`/admin/surat/${row.original.jenis_surat}/${row.original.id}/print`}>
-              <Printer className="h-4 w-4 mr-1" /> Cetak
-            </Link>
-          </Button>
-        </div>
-      ),
+      cell: ({ row }: { row: any }) => {
+        const jenis = row.original.jenis_surat
+        return (
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/admin/surat/${jenis}/${row.original.id}`}>
+                <FileText className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/admin/surat/${jenis}/${row.original.id}/print`}>
+                <Printer className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        )
+      },
     },
   ]
 
@@ -116,6 +118,11 @@ export default function SuratPage() {
           <h2 className="text-3xl font-bold tracking-tight">Data Surat</h2>
           <p className="text-muted-foreground">Kelola data surat keterangan</p>
         </div>
+        <Button variant="outline" asChild>
+          <Link href="/admin/surat/template">
+            <Settings className="mr-2 h-4 w-4" /> Pengaturan Template
+          </Link>
+        </Button>
       </div>
 
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>

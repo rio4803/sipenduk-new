@@ -94,6 +94,7 @@ export default function SuratPrintPage({
 
       <div ref={printRef} className="bg-white p-8 rounded-lg shadow-md print:shadow-none">
         <LetterTemplate
+          jenis={jenisSurat}
           title={suratTitle.toUpperCase()}
           nomor={surat.nomor_surat}
           tanggal={formatDate(surat.tanggal_surat)}

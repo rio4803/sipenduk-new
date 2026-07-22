@@ -69,6 +69,7 @@ export function LetterPreview({ type, formData, renderContent }: LetterPreviewPr
         {showPreview && (
           <div className="border rounded-md p-4 bg-white">
             <LetterTemplate
+              jenis={type}
               title={letterTitle}
               nomor={previewData.nomor_surat || "XXX/XXX/XXX/XXXX"}
               tanggal={

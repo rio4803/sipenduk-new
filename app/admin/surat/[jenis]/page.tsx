@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { DataTableWrapper } from "@/components/ui/data-table-wrapper"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { formatDate } from "@/lib/utils"
-import { Plus, FileText, Printer } from "lucide-react"
+import { Plus, FileText, Printer, Settings } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getSuratByJenis } from "../actions"
 
@@ -108,11 +108,18 @@ export default function JenisSuratPage({
           <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
           <p className="text-muted-foreground">Kelola data surat keterangan</p>
         </div>
-        <Button asChild>
-          <Link href={`/admin/surat/${jenisSurat}/buat`}>
-            <Plus className="mr-2 h-4 w-4" /> Buat Surat
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/admin/surat/template">
+              <Settings className="mr-2 h-4 w-4" /> Edit Template
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href={`/admin/surat/${jenisSurat}/buat`}>
+              <Plus className="mr-2 h-4 w-4" /> Buat Surat
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Card>

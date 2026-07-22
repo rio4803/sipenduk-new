@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100" height="120">
+  <!-- Outer Shield Frame -->
+  <path d="M 50 5 L 90 20 C 90 70, 75 100, 50 115 C 25 100, 10 70, 10 20 Z" fill="#1b5e20" stroke="#fbc02d" stroke-width="3" />
+  <path d="M 50 9 L 85 23 C 85 68, 71 95, 50 108 C 29 95, 15 68, 15 23 Z" fill="none" stroke="#ffffff" stroke-width="1.5" />
+  
+  <!-- Yellow Inner Shield Accent -->
+  <path d="M 50 16 L 78 28 C 78 64, 66 88, 50 99 C 34 88, 22 64, 22 28 Z" fill="#2e7d32" />
+
+  <!-- Mountain Peaks (Gunung Salak / Pangrango representation) -->
+  <polygon points="25,65 40,40 55,65" fill="#43a047" stroke="#1b5e20" stroke-width="0.5"/>
+  <polygon points="45,65 60,35 75,65" fill="#388e3c" stroke="#1b5e20" stroke-width="0.5"/>
+
+  <!-- Blue River / Water Streams at Bottom -->
+  <path d="M 24 75 Q 37 68 50 75 T 76 75 L 75 88 C 65 96 50 100 50 100 C 50 100 35 96 25 88 Z" fill="#1e88e5" />
+  <path d="M 26 80 Q 38 75 50 80 T 74 80" stroke="#ffffff" stroke-width="1.5" fill="none" />
+
+  <!-- Kujang (Traditional West Java / Bogor Emblem Weapon) -->
+  <g fill="#fbc02d" stroke="#bf360c" stroke-width="0.5">
+    <path d="M 50 25 C 44 32, 46 45, 48 55 L 52 55 C 54 45, 56 32, 50 25 Z" />
+    <circle cx="50" cy="30" r="1.5" fill="#ffffff" />
+    <circle cx="50" cy="36" r="1.5" fill="#ffffff" />
+    <circle cx="50" cy="42" r="1.5" fill="#ffffff" />
+    <path d="M 46 48 Q 42 42 45 36" fill="none" stroke="#fbc02d" stroke-width="1.5"/>
+    <path d="M 54 48 Q 58 42 55 36" fill="none" stroke="#fbc02d" stroke-width="1.5"/>
+  </g>
+
+  <!-- Rice & Cotton (Padi & Kapas) Side Ornaments -->
+  <!-- Left Rice (Gold) -->
+  <path d="M 28 35 Q 22 50 25 65" stroke="#fbc02d" stroke-width="2" fill="none"/>
+  <circle cx="24" cy="40" r="2" fill="#fdd835"/>
+  <circle cx="22" cy="47" r="2" fill="#fdd835"/>
+  <circle cx="23" cy="54" r="2" fill="#fdd835"/>
+  
+  <!-- Right Cotton (White) -->
+  <path d="M 72 35 Q 78 50 75 65" stroke="#fbc02d" stroke-width="2" fill="none"/>
+  <circle cx="76" cy="40" r="2.5" fill="#ffffff" stroke="#fbc02d" stroke-width="0.5"/>
+  <circle cx="78" cy="47" r="2.5" fill="#ffffff" stroke="#fbc02d" stroke-width="0.5"/>
+  <circle cx="77" cy="54" r="2.5" fill="#ffffff" stroke="#fbc02d" stroke-width="0.5"/>
+
+  <!-- Motto Ribbon Banner (SAYAGA SAYA KARSA / KABUPATEN BOGOR) -->
+  <path d="M 20 95 L 35 90 L 50 93 L 65 90 L 80 95 L 75 103 L 50 100 L 25 103 Z" fill="#fff8e1" stroke="#b71c1c" stroke-width="1"/>
+  <text x="50" y="98" font-family="Arial, sans-serif" font-size="5" font-weight="bold" fill="#b71c1c" text-anchor="middle">KABUPATEN BOGOR</text>
+</svg>
