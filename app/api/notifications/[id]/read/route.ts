@@ -1,41 +1,45 @@
-import { NextResponse } from "next/server"
-import { createClient } from "redis"
+import { NextRequest, NextResponse } from "next/server"
+import { supabase } from "@/app/utils/supabase"
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = params.id
+    const { id } = await params
     const { userId } = await request.json()
 
     if (!userId) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 })
     }
 
-    // Create a new Redis client for this request
-    const client = createClient({
-      url: process.env.REDIS_URL,
-    })
+    // Get current read_by array
+    const { data: pengumuman, error: fetchError } = await supabase
+      .from("pengumuman")
+      .select("read_by")
+      .eq("id", id)
+      .single()
 
-    await client.connect()
-
-    // Get notification data
-    const data = await client.get(`notification:${id}`)
-
-    if (!data) {
-      await client.disconnect()
-      return NextResponse.json({ error: "Notification not found" }, { status: 404 })
+    if (fetchError || !pengumuman) {
+      return NextResponse.json({ error: "Pengumuman tidak ditemukan" }, { status: 404 })
     }
 
-    // Parse notification data
-    const notification = JSON.parse(data)
+    const currentReadBy: string[] = pengumuman.read_by || []
 
     // Add user to read_by if not already there
-    if (!notification.read_by.includes(userId)) {
-      notification.read_by.push(userId)
-      await client.set(`notification:${id}`, JSON.stringify(notification))
-    }
+    if (!currentReadBy.includes(userId)) {
+      const updatedReadBy = [...currentReadBy, userId]
 
-    // Close the connection
-    await client.disconnect()
+      const { error: updateError } = await supabase
+        .from("pengumuman")
+        .update({ read_by: updatedReadBy })
+        .eq("id", id)
+
+      if (updateError) {
+        console.error("Error updating read status:", updateError)
+        return NextResponse.json({ error: "Gagal memperbarui status baca" }, { status: 500 })
+      }
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -43,4 +47,3 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: "Failed to mark notification as read" }, { status: 500 })
   }
 }
-

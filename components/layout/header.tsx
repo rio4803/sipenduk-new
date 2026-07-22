@@ -63,7 +63,26 @@ export function Header() {
 
       onMessage(messaging, (payload) => {
         console.log("Foreground message", payload);
-        alert(payload.notification?.title);
+        
+        const title = payload.notification?.title || "Notifikasi Baru"
+        const message = payload.notification?.body || "Ada pengumuman baru"
+        const id_pengumuman = payload.data?.pengumumanId || ""
+
+        if (id_pengumuman && user) {
+          toast.custom((t) => (
+            <QuickReplyToast 
+              t={t}
+              title={title}
+              message={message}
+              id_pengumuman={id_pengumuman}
+              userId={user.id}
+            />
+          ), { duration: 15000 })
+        } else {
+          toast(title, {
+            description: message,
+          })
+        }
       });
     };
 
@@ -205,5 +224,64 @@ export function Header() {
         </div>
       </div>
     </header>
+  )
+}
+
+function QuickReplyToast({ t, title, message, id_pengumuman, userId }: { t: any, title: string, message: string, id_pengumuman: string, userId: string }) {
+  const [pesan, setPesan] = useState("")
+  const [isSending, setIsSending] = useState(false)
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!pesan.trim() || !id_pengumuman || !userId) return
+    setIsSending(true)
+    try {
+      const response = await fetch("/api/notifications/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_pengumuman,
+          pengirim_id: userId,
+          warga_id: userId,
+          pesan,
+          is_admin_reply: false
+        })
+      })
+      if (response.ok) {
+        toast.success("Balasan terkirim!")
+        toast.dismiss(t)
+      } else {
+        toast.error("Gagal mengirim balasan")
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Terjadi kesalahan")
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  return (
+    <div className="bg-background text-foreground border rounded-lg shadow-lg p-4 w-full max-w-sm flex flex-col gap-2">
+      <div className="flex flex-col">
+        <span className="font-bold text-sm text-primary flex items-center gap-2">
+          💬 {title}
+        </span>
+        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{message}</p>
+      </div>
+      <form onSubmit={handleSend} className="flex gap-2 mt-2">
+        <input 
+          type="text" 
+          placeholder="Tulis balasan..." 
+          value={pesan} 
+          onChange={(e) => setPesan(e.target.value)}
+          className="flex-1 text-xs border rounded px-2 py-1 bg-muted focus:outline-none focus:ring-1 focus:ring-primary"
+          disabled={isSending}
+        />
+        <Button type="submit" size="sm" className="text-xs px-2 h-7" disabled={isSending}>
+          {isSending ? "..." : "Kirim"}
+        </Button>
+      </form>
+    </div>
   )
 }

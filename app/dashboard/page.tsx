@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatDate, formatRelativeTime, getAge } from "@/lib/utils"
-import { PDFExport } from "@/components/pdf-export"
+import { KKPdfExport } from "@/components/kk-pdf-export"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { ActivityFeed } from "@/components/dashboard/activity-feed"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
@@ -228,7 +228,23 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
            <NotificationButton />
-           <PDFExport elementId="kk-data" fileName="data-keluarga" />
+           <KKPdfExport
+             kk={kkData}
+             anggota={anggotaKeluarga.map((a: any) => ({
+               id: a.id,
+               hubungan: a.hubungan,
+               penduduk: {
+                 nik: a.nik,
+                 nama: a.nama,
+                 jenis_kelamin: a.jenis_kelamin,
+                 tempat_lahir: a.tempat_lahir,
+                 tanggal_lahir: a.tanggal_lahir,
+                 agama: a.agama,
+                 status_perkawinan: a.status_perkawinan,
+                 pekerjaan: a.pekerjaan,
+               }
+             }))}
+           />
         </div>
       </div>
 

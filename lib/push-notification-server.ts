@@ -16,7 +16,7 @@ export async function sendPushNotificationToAll(payload: PushNotificationPayload
             target: "all"
         })
 
-        const request = await fetch("/api/notification/send", {
+        const request = await fetch("/api/notifications/send", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -47,7 +47,7 @@ export async function sendNotificationToUser(payload: PushNotificationPayload, u
             target: user_id
         })
     
-        const request = await fetch("/api/notification/send", {
+        const request = await fetch("/api/notifications/send", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

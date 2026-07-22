@@ -20,7 +20,7 @@ function normalizePayload(payload) {
     body: notif.body || data.body || "Ada pengumuman baru",
     icon: notif.icon || "/icon-192.png",
     badge: data.badge || "/icon-192.png",
-    url: data.url || "/",
+    url: data.url || "/dashboard/notifikasi",
     tag: data.tag || "sipenduk-fcm",
     requireInteraction: data.requireInteraction === "true",
   };
@@ -43,6 +43,10 @@ messaging.onBackgroundMessage((payload) => {
       renotify: true,
       requireInteraction: notif.requireInteraction,
       vibrate: [100, 50, 100],
+      actions: [
+        { action: "open", title: "Buka Chat" },
+        { action: "dismiss", title: "Tutup" },
+      ],
     };
 
     self.registration.showNotification(notif.title, options);
@@ -54,7 +58,10 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const targetUrl = event.notification?.data?.url || "/";
+  // If user clicked "Tutup", do nothing
+  if (event.action === "dismiss") return;
+
+  const targetUrl = event.notification?.data?.url || "/dashboard/notifikasi";
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true })

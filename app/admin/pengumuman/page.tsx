@@ -7,7 +7,7 @@ import { getPengumumanData, deletePengumuman } from "./actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Trash2, Plus, Bell } from "lucide-react"
+import { Trash2, Plus, Bell, MessageSquare } from "lucide-react"
 
 export default function PengumumanPage() {
   const [pengumumanList, setPengumumanList] = useState<any[]>([])
@@ -119,6 +119,15 @@ export default function PengumumanPage() {
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Link href={`/admin/pengumuman/${pengumuman.id}/balasan`}>
+                        <MessageSquare className="h-4 w-4" />
+                      </Link>
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"

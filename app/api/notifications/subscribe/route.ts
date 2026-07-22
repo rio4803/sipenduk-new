@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const {error} = await supabase.from("push_subscriptions").insert({user_id, token})
     if(error){
       if(error.code == "23505"){
-        const {error} = await supabase.from("push_subscriptions").update({token}).eq("id", user_id)
+        const {error} = await supabase.from("push_subscriptions").update({token}).eq("user_id", user_id)
         if(error){
           console.log(error)
           return NextResponse.json({ error: "Terjadi kesalahan" }, { status: 400 })

@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatDate } from "@/lib/utils"
-import { PDFExport } from "@/components/pdf-export"
+import { KKPdfExport } from "@/components/kk-pdf-export"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 export default function KeluargaPage() {
@@ -80,7 +80,23 @@ export default function KeluargaPage() {
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Data Keluarga</h2>
           <p className="text-muted-foreground">Informasi detail keluarga</p>
         </div>
-        <PDFExport elementId="keluarga-data" fileName="detail-keluarga" />
+        <KKPdfExport
+          kk={kkData}
+          anggota={anggotaKeluarga.map((a: any) => ({
+            id: a.id,
+            hubungan: a.hubungan,
+            penduduk: {
+              nik: a.nik,
+              nama: a.nama,
+              jenis_kelamin: a.jenis_kelamin,
+              tempat_lahir: a.tempat_lahir,
+              tanggal_lahir: a.tanggal_lahir,
+              agama: a.agama,
+              status_perkawinan: a.status_perkawinan,
+              pekerjaan: a.pekerjaan,
+            }
+          }))}
+        />
       </div>
 
       <div id="keluarga-data">

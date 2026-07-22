@@ -70,25 +70,25 @@ export async function createPengumuman(formData: FormData, userId: string, userN
       return {error: "Terjadi kesalahan saat membuat pengumuman baru"}
     }
 
-    // Send push notification
-    // try {
-    //   if(tujuan != "all"){
-    //     await sendNotificationToUser({
-    //       title: `Pengumuman Baru: ${judul}`,
-    //       body: isi.length > 50 ? `${isi.substring(0, 50)}...` : isi,
-    //       data: { url: "/dashboard/notifikasi" },
-    //     }, tujuan)
-    //   } else {
-    //     await sendPushNotificationToAll({
-    //       title: `Pengumuman Baru: ${judul}`,
-    //       body: isi.length > 50 ? `${isi.substring(0, 50)}...` : isi,
-    //       data: { url: "/dashboard/notifikasi" } // Redirect to notification/dashboard page
-    //     })
-    //   }
-    // } catch (pushError) {
-    //   console.error("Failed to send push notification:", pushError)
-    //   return {error: "Something wen't wrong"}
-    // }
+    // Auto-send push notification to target
+    try {
+      const pushPayload = {
+        title: `Pengumuman Baru: ${judul}`,
+        body: isi.length > 50 ? `${isi.substring(0, 50)}...` : isi,
+        target: tujuan == "all" ? undefined : tujuan,
+        data: { url: "/dashboard/notifikasi" },
+      }
+
+      await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/notifications/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pushPayload),
+      })
+    } catch (pushError) {
+      console.error("Failed to send push notification:", pushError)
+      // Don't fail the whole operation if push fails
+    }
+
     return { success: true }
   } catch (error) {
     console.error("Error creating pengumuman:", error)
